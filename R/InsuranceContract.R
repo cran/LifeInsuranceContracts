@@ -455,6 +455,7 @@ InsuranceContract = R6Class(
             if (!is.null(params$premiumPeriod)) params$premiumPeriod = max(1, params$premiumPeriod - t)
             if (!is.null(params$deferralPeriod)) params$deferralPeriod = max(0, params$deferralPeriod - t)
             if (!is.null(params$contractClosing)) params$contractClosing = params$contractClosing + years(t)
+            params$initialCapital = NULL
             # TODO: Adjust non-constant parameters (e.g. profit rates or benefits given as vector) to the later start time
 
             # TODO: Generalize this to also allow specifying dynamic premium rather than sum insured
@@ -479,7 +480,7 @@ InsuranceContract = R6Class(
             # Override with arguments explicitly given
             arguments = list(...)
             params[names(arguments)] = arguments[names(arguments)]
-            params$comment = sprintf("Dynamic increase at time %d to sum %d", t, NewSumInsured)
+            params$comment = sprintf("Dynamic increase at time %d to sum %0.2f", t, NewSumInsured)
             do.call(self$addBlock, params)
         },
 
@@ -518,6 +519,9 @@ InsuranceContract = R6Class(
         #'        they no longer represent the actual contract state at these
         #'        times. If values are not recalculated, the reserves at each
         #'        time step represent the proper state at that point in time.
+        #' @param additionalCapital The capital that is added to the contract
+        #'        (e.g. capital carried over from a previous contract) at the
+        #'        premium calculation time.
         #' @param recalculatePremiums Whether the premiums should be recalculated
         #'        at time \code{premiumCalculationTime} at all.
         #' @param recalculatePremiumSum Whether to recalculate the overall premium
@@ -525,7 +529,7 @@ InsuranceContract = R6Class(
         #' @param history_comment The comment for the history snapshot entyr
         #' @param history_type The type (free-form string) to record in the history snapshot
         #'
-        calculateContract = function(calculate = "all", valuesFrom = 0, premiumCalculationTime = 0, preservePastPV = TRUE, recalculatePremiums = TRUE, recalculatePremiumSum = TRUE, history_comment = NULL, history_type = "Contract") {
+        calculateContract = function(calculate = "all", valuesFrom = 0, premiumCalculationTime = 0, preservePastPV = TRUE, additionalCapital = 0, recalculatePremiums = TRUE, recalculatePremiumSum = TRUE, history_comment = NULL, history_type = "Contract") {
             if (!is.null(self$blocks)) {
                 for (b in self$blocks) {
                     .args = as.list(match.call()[-1])
@@ -549,6 +553,10 @@ InsuranceContract = R6Class(
                 starting = self$Values$cashFlows,
                 ending = private$determineCashFlows(),
                 t = valuesFrom);
+
+            if (additionalCapital > 0) {
+                self$values$cashFlows[as.character(premiumCalculationTime), "additional_capital"] = additionalCapital / self$values$ContractData$sumInsured
+            }
 
             if (recalculatePremiumSum) {
                 # Premium waiver: Premium sum is not affected by premium waivers, i.e. everything depending on the premium sum uses the original premium sum!
@@ -610,13 +618,15 @@ InsuranceContract = R6Class(
             if (calculate == "absvalues") return(invisible(self));
 
             self$Values$reserves           = mergeValues(starting = self$Values$reserves,           ending = private$calculateReserves(), t = valuesFrom);
-            self$Values$reservesBalanceSheet = mergeValues(starting = self$Values$reservesBalanceSheet,ending = private$calculateReservesBalanceSheet(), t = valuesFrom);
             if (calculate == "reserves") return(invisible(self));
             self$Values$premiumComposition = mergeValues(starting = self$Values$premiumComposition, ending = private$premiumAnalysis(), t = valuesFrom);
             self$Values$premiumCompositionSums = mergeValues(starting = self$Values$premiumCompositionSums, ending = private$premiumCompositionSums(), t = valuesFrom);
             self$Values$premiumCompositionPV = mergeValues(starting = self$Values$premiumCompositionPV, ending = private$premiumCompositionPV(), t = valuesFrom);
             self$Values$basicData          = mergeValues(starting = self$Values$basicData,          ending = private$getBasicDataTimeseries(), t = valuesFrom);
             if (calculate == "premiumcomposition") return(invisible(self));
+
+            self$Values$reservesBalanceSheet = mergeValues(starting = self$Values$reservesBalanceSheet,ending = private$calculateReservesBalanceSheet(), t = valuesFrom);
+            if (calculate == "reservesbalancesheet") return(invisible(self));
 
             private$profitParticipation(calculateFrom = valuesFrom);
             if (calculate == "profitparticipation") return(invisible(self));
@@ -680,13 +690,30 @@ InsuranceContract = R6Class(
                     arr1 + arr2
                 }
             }
-            consolidateField = function(field) {
+            sumKeyedArrays = function(arr1 = NULL, arr2 = NULL) {
+                if (is.null(arr2)) {
+                    arr1
+                } else if (is.null(arr1)) {
+                    arr2
+                } else {
+                    bind_rows(arr1, arr2) %>%
+                        group_by(date) %>%
+                        summarise_all(list(sum))
+                }
+            }
+            consolidateField = function(field, keyed = FALSE) {
                 vals = NULL
                 if (length(self$blocks) == 0) {
                     vals = self$Values[[field]]
                 }
                 for (b in self$blocks) {
-                    vals = sumPaddedArrays(arr1 = vals, arr2 = b$Values[[field]], pad2 = b$Parameters$ContractData$blockStart)
+                    if (keyed) {
+                        # The rows of the two data.frames can be associated by the values of a certain column
+                        vals = sumKeyedArrays(arr1 = vals, arr2 = b$Values[[field]])
+                    } else {
+                        # Simply pad the arrays and sum them up:
+                        vals = sumPaddedArrays(arr1 = vals, arr2 = b$Values[[field]], pad2 = b$Parameters$ContractData$blockStart)
+                    }
                 }
                 mergeValues(starting = self$Values[[field]],   ending = vals, t = valuesFrom);
             }
@@ -713,10 +740,15 @@ InsuranceContract = R6Class(
             self$Values$premiumCompositionSums = consolidateField("premiumCompositionSums")
             self$Values$premiumCompositionPV   = consolidateField("premiumCompositionPV")
             self$Values$reserves               = consolidateField("reserves")
-            self$Values$reservesBalanceSheet   = consolidateField("reservesBalanceSheet")
+            self$Values$reservesBalanceSheet   = consolidateField("reservesBalanceSheet", keyed = TRUE)
             # TODO: Basic Data cannot simply be summed, e.g. the interest rate!
             self$Values$basicData              = consolidateField("basicData")
             # self$Values$basicData[,c("InterestRate", "PolicyDuration", "PremiumPeriod")] = NULL
+
+            # Some fields can NOT be summed, but have to be left untouched.
+            # Hard-code these to use the values from the main contract part:
+            self$Values$reservesBalanceSheet[,c("date", "time")]               = self$blocks[[1]]$Values$reservesBalanceSheet[,c("date", "time")]
+            self$Values$basicData[,c("InterestRate", "PolicyDuration", "PremiumPeriod")]               = self$blocks[[1]]$Values$basicData[,c("InterestRate", "PolicyDuration", "PremiumPeriod")]
 
             invisible(self)
         },
@@ -877,7 +909,7 @@ InsuranceContract = R6Class(
             #### #
             # COSTS PARAMETERS: can be a function => evaluate it to get the real costs
             #### #
-            self$Parameters$Costs = private$evaluateCosts(self$Parameters$Costs)
+            self$Parameters$Costs = private$evaluateCosts()
 
             #### #
             # AGES for multiple joint lives:
@@ -921,8 +953,8 @@ InsuranceContract = R6Class(
             invisible(self)
         },
 
-        evaluateCosts = function(costs) {
-            self$tarif$getCostValues(costs, params = self$Parameters)
+        evaluateCosts = function() {
+            self$tarif$getCostValues(params = self$Parameters)
         },
 
         determineInternalValues = function(...) {

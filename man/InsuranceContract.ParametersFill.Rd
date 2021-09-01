@@ -7,13 +7,14 @@
 InsuranceContract.ParametersFill(
   params = InsuranceContract.ParameterStructure,
   costs = NULL,
+  minCosts = NULL,
   ...
 )
 }
 \arguments{
 \item{params}{Initial values of the insurance contract parameters. (default: empty parameter structure)}
 
-\item{costs, ...}{Values for any of the entries in the insurance contract
+\item{costs, minCosts, ...}{Values for any of the entries in the insurance contract
 parameter structure. These values take precedence over the
 initial parameters provided in \code{params}.}
 }

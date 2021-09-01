@@ -151,7 +151,6 @@ all fields.}
 \item \href{#method-getCashFlowsCosts}{\code{InsuranceTarif$getCashFlowsCosts()}}
 \item \href{#method-presentValueCashFlows}{\code{InsuranceTarif$presentValueCashFlows()}}
 \item \href{#method-presentValueCashFlowsCosts}{\code{InsuranceTarif$presentValueCashFlowsCosts()}}
-\item \href{#method-costValuesAsMatrix}{\code{InsuranceTarif$costValuesAsMatrix()}}
 \item \href{#method-getAbsCashFlows}{\code{InsuranceTarif$getAbsCashFlows()}}
 \item \href{#method-getAbsPresentValues}{\code{InsuranceTarif$getAbsPresentValues()}}
 \item \href{#method-presentValueBenefits}{\code{InsuranceTarif$presentValueBenefits()}}
@@ -409,19 +408,13 @@ Not to be called directly, but implicitly by the \link{InsuranceContract} object
 Obtain the cost structure from the cost parameter and the
 given paremeter set
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{InsuranceTarif$getCostValues(costs, params)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{InsuranceTarif$getCostValues(params)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{costs}}{The cost parameter passed to the tarif definition or the
-contract (either an array of the form returned by \code{\link[=initializeCosts]{initializeCosts()}} or
-a function(params, values) returning such an array)}
-
-\item{\code{params}}{Contract-specific, full set of parameters of the contract
-(merged parameters of the defaults, the tariff, the profit participation
-scheme and the contract)}
+\item{\code{params}}{The parameters of the contract / tariff}
 }
 \if{html}{\out{</div>}}
 }
@@ -673,29 +666,6 @@ Not to be called directly, but implicitly by the \link{InsuranceContract} object
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-costValuesAsMatrix"></a>}}
-\if{latex}{\out{\hypertarget{method-costValuesAsMatrix}{}}}
-\subsection{Method \code{costValuesAsMatrix()}}{
-Convert the cost values array to a tx15 matrix
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{InsuranceTarif$costValuesAsMatrix(costValues)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{costValues}}{The cost data structure (array of size tx5x3) to be converted to a matrix}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Details}{
-Not to be called directly, but implicitly by the \link{InsuranceContract} object.
-Convert the array containing cost values like cashflows, present
-values, etc. (objects of dimension tx5x3) to a matrix with dimensions (tx15)
-}
-
-}
-\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-getAbsCashFlows"></a>}}
 \if{latex}{\out{\hypertarget{method-getAbsCashFlows}{}}}
 \subsection{Method \code{getAbsCashFlows()}}{
@@ -920,14 +890,16 @@ Not to be called directly, but implicitly by the \link{InsuranceContract} object
 \if{latex}{\out{\hypertarget{method-getBalanceSheetReserveFactor}{}}}
 \subsection{Method \code{getBalanceSheetReserveFactor()}}{
 Calculate the (linear) interpolation factors for the balance
-sheet reserve (Dec. 31) between the yearly contract clowing dates
+sheet reserve (Dec. 31) between the yearly contract closing dates
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{InsuranceTarif$getBalanceSheetReserveFactor(params, years = 1)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{InsuranceTarif$getBalanceSheetReserveFactor(method, params, years = 1)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
+\item{\code{method}}{The method for the balance sheet interpolation (30/360, act/act, act/360, act/365 or a function)}
+
 \item{\code{params}}{Contract-specific, full set of parameters of the contract
 (merged parameters of the defaults, the tariff, the profit participation
 scheme and the contract)}

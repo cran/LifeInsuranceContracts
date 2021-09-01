@@ -3,6 +3,8 @@
 #' @import openxlsx
 #' @import MortalityTables
 #' @import R6
+#' @import tidyr
+#' @importFrom rlang .data
 NULL
 
 
@@ -87,7 +89,7 @@ writePremiumCoefficients = function(wb, sheet, values, tarif = NULL, type = "ben
       dimn = dimnames(newvals);
       dim(newvals) = c(1, dim(vals));
       dimnames(newvals) = c(list("Coeff"), dimn);
-      as.data.frame(tarif$costValuesAsMatrix(newvals))
+      costValuesAsDF(newvals)
     };
   }
   coeff = rbind(mod(values[["net"]][["SumInsured"]][[type]]),
@@ -104,7 +106,7 @@ writePremiumCoefficients = function(wb, sheet, values, tarif = NULL, type = "ben
 labelsReplace = function(labels) {
   # TODO: Use recode here!
 
-  # Pr?mienarten
+  # Prämienarten
   labels[labels == "unit.net"] = "Netto";
   labels[labels == "unit.Zillmer"] = "Zillmer";
   labels[labels == "unit.gross"] = "Brutto";
@@ -127,10 +129,12 @@ labelsReplace = function(labels) {
   labels[labels == "GrossPremium"] = "BP";
   labels[labels == "NetPremium"] = "NP";
   labels[labels == "Constant"] = "";
+  labels[labels == "Reserve"] = "Res.";
 
   # Cash Flows
   labels[labels == "premiums_advance"] = "Pr\u00e4m. vorsch.";
   labels[labels == "premiums_arrears"] = "Pr\u00e4m. nachsch.";
+  labels[labels == "additional_capital"] = "Einschuss";
   labels[labels == "guaranteed_advance"] = "Gar. vorsch.";
   labels[labels == "guaranteed_arrears"] = "Gar. nachsch.";
   labels[labels == "survival_advance"] = "Erl. vorsch.";
@@ -140,6 +144,7 @@ labelsReplace = function(labels) {
   labels[labels == "premiums"] = "Pr\u00e4m.";
   labels[labels == "guaranteed"] = "Gar.";
   labels[labels == "survival"] = "Erl.";
+  labels[labels == "after.death"] = "tot";
   labels[labels == "death_SumInsured"] = "Abl. VS";
   labels[labels == "death_GrossPremium"] = "Abl. BP";
   labels[labels == "death"] = "Abl.";
@@ -230,6 +235,7 @@ getContractBlockValues = function(contract) {
   values = data.frame(
       "ID"                  = contract$Parameters$ContractData$id,
       "Tariff"              = contract$tarif$tarif,
+      "Start of Contract"   = contract$Parameters$ContractData$contractClosing,
       "Sum insured"         = contract$Parameters$ContractData$sumInsured,
       "Mortality table"     = contract$Parameters$ActuarialBases$mortalityTable@name,
       i                     = contract$Parameters$ActuarialBases$i,
@@ -254,7 +260,7 @@ getContractBlockPremiums = function(contract) {
   if (!is.null(contract$Values$premiums)){
     values = bind_cols(
       data.frame(
-        "ID"                  = contract$Parameters$ContractData$id,
+        "ID" = contract$Parameters$ContractData$id,
         stringsAsFactors = FALSE, check.names = FALSE
       ),
       data.frame(t(contract$Values$premiums), stringsAsFactors = FALSE, check.names = FALSE)
@@ -267,13 +273,32 @@ getContractBlockPremiums = function(contract) {
   values
 }
 
+#' Convert the multi-dimensional costs array to a data.frame for output to a file
+#'
+#' @description Convert the cost values array to a tx15 matrix
+#' @details Not to be called directly, but implicitly by the [InsuranceContract] object.
+#' Convert the array containing cost values like cashflows, present
+#' values, etc. (objects of dimension tx5x3) to a matrix with dimensions (tx15)
+#'
+#' @param costValues Cost definition data structure
+costValuesAsDF = function(costValues) {
+  as.data.frame.table(costValues, responseName = "Value", stringsAsFactors = TRUE) %>%
+    mutate(Var4 = recode(.data$Var4, "Erl." = "")) %>%
+    arrange(.data$Var4, .data$Var2, .data$Var3, .data$Var1) %>%
+    unite("costtype", "Var2", "Var3", "Var4", sep = " ") %>%
+    pivot_wider(names_from = .data$costtype, values_from = .data$Value) %>%
+    mutate(Var1 = NULL)
+}
+
+
+
 exportLoadingsTable = function(wb, sheet, contract, crow, ccol, styles = styles, seprows = 3, tariffs.handled = c()) {
   tarifname = contract$tarif$tarif
   if (!(tarifname %in% tariffs.handled)) {
-    # TODO: Detect cost structures overridden at contract-level! => Currently only the default tariff costs are printed!
-    costtable = as.data.frame.table(setInsuranceValuesLabels(contract$Parameters$Costs) )
-    colnames(costtable) = c("Kostenart", "Basis", "Periode", "Kostensatz");
-    costtable = costtable[costtable[,"Kostensatz"] != 0.0000,]
+    costtable = costsDisplayTable(contract$Parameters$Costs)
+    # costtable = as.data.frame.table(setInsuranceValuesLabels(contract$Parameters$Costs) )
+    # colnames(costtable) = c("Kostenart", "Basis", "Periode", "Kostensatz");
+    # costtable = costtable[costtable[,"Kostensatz"] != 0.0000,]
     cap = sprintf("Kosten (Tarif %s)", tarifname)
     writeValuesTable(wb, sheet, costtable, crow = crow, ccol = 1, tableName = tableName("Kosten_", tarifname), styles = styles, caption = cap);
     # writeDataTable(wb, sheet, costtable, startCol = 1, startRow = crow + 1, colNames = TRUE, rowNames = FALSE,
@@ -312,20 +337,30 @@ exportContractDataTable = function(wb, sheet, contract, ccol = 1, crow = 1, styl
   mergeCells(wb, sheet, cols = 2:10, rows = 1);
   mergeCells(wb, sheet, cols = 2:10, rows = 2);
   mergeCells(wb, sheet, cols = 2:10, rows = 3);
-  addStyle(wb, sheet, style = styles$wrap, rows = 3, cols = 2:10, stack = TRUE);
-  addStyle(wb, sheet, style = createStyle(valign = "top"), rows = 1:3, cols = 1:10, gridExpand = TRUE, stack = TRUE);
+  addStyle(wb, sheet, style = styles$wrap, rows = 3, cols = 2:11, stack = TRUE);
+  addStyle(wb, sheet, style = createStyle(valign = "top"), rows = 1:3, cols = 1:11, gridExpand = TRUE, stack = TRUE);
 
   crow = crow + 4;
-
   # Values (parameters, premiums, etc.) of all blocks   ####
+  additional_capital = contractPremiums$additional_capital
+  if (is.null(contract$Values$premiums)) {
+      # Contracts with multiple child blocks do not have their own premium structure => set additional capital to 0
+      additional_capital = c(0, additional_capital)
+  }
   tmp = contractValues %>%
+    mutate(`Initial Capital` = additional_capital) %>%
     select(
-      Vertragsteil = .data$ID, Tarif = .data$Tariff, .data$`Sum insured`,
+      Vertragsteil = .data$ID, Beginn = .data$`Start of Contract`, Tarif = .data$Tariff, .data$`Sum insured`,
+      .data$`Initial Capital`,
       .data$`Mortality table`, .data$i, .data$Age, .data$`Policy duration`, .data$`Premium period`,
       .data$`Deferral period`, .data$`Guaranteed payments`)
   writeValuesTable(wb, sheet, values = setInsuranceValuesLabels(tmp),
                    caption = "Basisdaten der Vertragsteile", crow = crow, ccol = 1,
                    tableName = "BlocksBasicData", styles = styles)
+  # Second column is start date of contract, fourth is sum insured, sixth is guaranteed interest rate
+  addStyle(wb, sheet, style = styles$currency0, rows = crow + 1 + (1:NROW(tmp)), cols = 4:5, gridExpand = TRUE, stack = TRUE);
+  addStyle(wb, sheet, style = styles$cost0, rows = crow + 1 + (1:NROW(tmp)), cols = 7, gridExpand = TRUE, stack = TRUE);
+
   crow = crow + NROW(tmp) + 2 + 2 # 2 rows for caption/table header, 2 rows padding
 
   # Unit Premiums ####
@@ -457,7 +492,10 @@ exportReserveTable = function(wb, sheet, contract, ccol = 1, crow = 1, styles = 
     caption = "Bilanzreserve", valueStyle = styles$currency0) + 1;
 
   endrow = (crow + 1 + nrrow)
-  addStyle(wb, sheet, style = createStyle(numFmt = "0.0##"), cols = oldccol,
+  # First column of balance sheet reserves is the date, the second the fractional time within the contract
+  addStyle(wb, sheet, style = createStyle(numFmt = "DATE"), cols = oldccol,
+           rows = (crow + 2):endrow, gridExpand = TRUE, stack = TRUE);
+  addStyle(wb, sheet, style = createStyle(numFmt = "0.0##"), cols = oldccol + 1,
            rows = (crow + 2):endrow, gridExpand = TRUE, stack = TRUE);
 
   exportBlockID(wb, sheet, id = id, rows = blockid.row, cols = ccol:cl, styles = styles)
@@ -681,7 +719,7 @@ exportPVTable = function(wb, sheet, contract, ccol = 1, crow = 1, styles = c(), 
     tPrem = contract$Values$int$premiumCalculationTime
 
     qp = contract$Values$transitionProbabilities[1:nrrow,]; # extract the probabilities once, will be needed in
-    costPV = as.data.frame(contract$tarif$costValuesAsMatrix(setInsuranceValuesLabels(contract$Values$presentValuesCosts)));
+    costPV = costValuesAsDF(setInsuranceValuesLabels(contract$Values$presentValuesCosts))
     cl = ccol
 
     # We add six lines before the present values to show the coefficients for the premium calculation
@@ -752,7 +790,7 @@ exportCFTable = function(wb, sheet, contract, ccol = 1, crow = 1, styles = c(), 
       wb, sheet, setInsuranceValuesLabels(contract$Values$cashFlows),
       crow = crow, ccol = cl, tableName = tableName("CF_", id), styles = styles,
       caption = "Leistungscashflows", valueStyle = styles$hide0) + 1;
-    costCF = as.data.frame(contract$tarif$costValuesAsMatrix(setInsuranceValuesLabels(contract$Values$cashFlowsCosts)));
+    costCF = costValuesAsDF(setInsuranceValuesLabels(contract$Values$cashFlowsCosts))
     cl = cl + writeValuesTable(
       wb, sheet, costCF,
       crow = crow, ccol = cl, tableName = tableName("CFcosts_", id), styles = styles,
@@ -841,7 +879,8 @@ exportInsuranceContract.xlsx = function(contract, filename) {
     wrap = createStyle(wrapText = TRUE),
     center = createStyle(halign = "center", valign = "center"),
     separator = createStyle(fgFill = "#000000"),
-    unitpremiums = createStyle(numFmt = "0.00000%; -0.00000%;")
+    unitpremiums = createStyle(numFmt = "0.00000%; -0.00000%;"),
+    date = createStyle(numFmt = "DATE")
   );
 
   ############################################### #

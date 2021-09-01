@@ -74,12 +74,12 @@ contract.L71U$Values$reserves %>% pander()
 contract.L71U$Values$cashFlows %>% select(starts_with('premiums'), starts_with('death'), -death_Refund_past ) %>% pander()
 
 ## ----SimpleExampleRiskCFCostCode, eval=F--------------------------------------
-#  contract.L71U$Values$cashFlowsCosts
+#  contract.L71U$Values$cashFlowsCosts[,,,"survival"]
 
 ## ----SimpleExampleRiskCFCostOut, echo=F, results="asis"-----------------------
 for (base in dimnames(contract.L71U$Values$cashFlowsCosts)[[3]]) {
   cat("* ,,\"", base, "\"\n", sep = "")
-  cat(contract.L71U$Values$cashFlowsCosts[,,base ] %>% pander(round = 4, style = "rmarkdown"))
+  cat(contract.L71U$Values$cashFlowsCosts[,,base, "survival"] %>% pander(round = 4, style = "rmarkdown"))
 }
 
 ## ----SimpleExampleRiskPVCode, eval=F------------------------------------------
@@ -94,7 +94,7 @@ contract.L71U$Values$presentValues %>% as.data.frame() %>% select(starts_with('p
 ## ----SimpleExampleRiskPVCostOut, echo=F, results="asis"-----------------------
 for (base in dimnames(contract.L71U$Values$presentValuesCosts)[[3]]) {
   cat("* ,,\"", base, "\"\n", sep = "")
-  cat(contract.L71U$Values$presentValuesCosts[,,base ] %>% pander(round = 4, style = "rmarkdown"))
+  cat(contract.L71U$Values$presentValuesCosts[,,base,"survival" ] %>% pander(round = 4, style = "rmarkdown"))
 }
 
 ## ----SimpleExampleRiskPVPremCode, eval=F--------------------------------------
@@ -274,7 +274,7 @@ Tarif.DefAnnuity = InsuranceTarif$new(
   tarif = "Life1",
   desc = "A deferred annuity (life-long payments start at age 65) with reg. premiums",
 
-  contractPeriod = function(params, values) { 120 - params$ContractData$age},
+  policyPeriod = function(params, values) { 120 - params$ContractData$age},
   deferralPeriod = function(params, values) { 65 - params$ContractData$age},
   premiumPeriod = function(params, values) { 65 - params$ContractData$age},
     
@@ -834,4 +834,13 @@ contractGridPremium(
   contractClosing = as.Date("2020-09-01")
 ) %>% `colnames<-`(c("Full benefit", "Waiting period"))
 
+
+## ----termfix.Zillmeradjust.Hook, eval=FALSE-----------------------------------
+#    costs = initializeCosts(alpha = 0.04, Zillmer = 0.035, gamma = 0.0015, gamma.fullcontract = 0.001),
+#    adjustPremiumCoefficients = function(coeff, type, premiums, params, values, premiumCalculationTime) {
+#      if (type == "Zillmer") {
+#        coeff[["SumInsured"]][["costs"]]["gamma", "SumInsured", "guaranteed"] = 1
+#      }
+#      coeff
+#    },
 

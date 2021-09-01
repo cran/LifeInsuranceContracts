@@ -101,6 +101,28 @@ ProfitComponentsEnum = objectProperties::setMultipleEnum("ProfitComponents",
     )
 )
 
+#' Determine whether a contract (given all parameters) is a single-premium contract or with regular premiums
+#'
+#' Single premium contracts are identified by the parameter \code{premiumPeriod = 1}.
+#'
+#' @param params The parameters of the contract.
+#' @param values Unused by default (already calculated values of the contract)
+#'
+#' @export
+isSinglePremiumContract = function(params, values) { params$ContractData$premiumPeriod <= 1 }
+
+
+#' Determine whether a contract (given all parameters) is a contract with regular premiums
+#'
+#' Regular premium contracts are identified by the parameter \code{premiumPeriod > 1}.
+#'
+#' @param params The parameters of the contract.
+#' @param values Unused by default (already calculated values of the contract)
+#'
+#' @export
+isRegularPremiumContract = function(params, values) { params$ContractData$premiumPeriod > 1 }
+
+
 #' Describes the death benefit of a linearly decreasing whole life insurance (after a possible deferall period)
 #'
 #' The death benefit will be the full sumInsured for the first year after the
@@ -148,17 +170,57 @@ deathBenefit.linearDecreasing = function(len, params, values) {
 #'
 #' @export
 deathBenefit.annuityDecreasing = function(interest) {
-    function(len, params, values) {
-        protectionPeriod = params$ContractData$policyPeriod - params$ContractData$deferralPeriod;
-        vk = 1/(1 + interest);
-        if (interest == 0) {
-            sumInsured = (protectionPeriod:0) / protectionPeriod
-        } else {
-            sumInsured = (vk ^ (protectionPeriod:0) - 1) / (vk ^ protectionPeriod - 1)
-        }
-        pad0(sumInsured, l = len)
+  function(len, params, values) {
+    protectionPeriod = params$ContractData$policyPeriod - params$ContractData$deferralPeriod;
+    vk = 1/(1 + interest);
+    if (interest == 0) {
+      sumInsured = (protectionPeriod:0) / protectionPeriod
+    } else {
+      sumInsured = (vk ^ (protectionPeriod:0) - 1) / (vk ^ protectionPeriod - 1)
     }
+    pad0(sumInsured, l = len)
+  }
 }
+
+#' Defines a frequency charge (surcharge for monthly/quarterly/semiannual) premium payments #'
+#' Tariffs are typically calculated with yearly premium installments. When
+#' premiums are paid more often then one a year (in advance), the insurance
+#' receives part of the premium later (or not at all in case of death), so a
+#' surcharge for premium payment frequencies higher than yearly is applied to
+#' the  premium, typically in the form of a percentage of the premium.
+#'
+#' This function generates the internal data structure to define surcharges for
+#' monthly, quarterly and semiannual premium payments. The given surcharges can
+#' be either given as percentage points (e.g. 1.5 means 1.5% = 0.015) or as
+#' fractions of 1 (i.e. 0.015 also means 1.5% surcharge). The heuristics applied
+#' to distinguish percentage points and fractions is that all values larger than 0.1
+#' are understood as percentage points and values 0.1 and lower are understood
+#' as fractions of 1.
+#' As a consequence, a frequency charge of 10% or more MUST be given as percentage points.
+#'
+#' Currently, the frequency charges are internally represented as a named list,
+#' \code{list("1" = 0, "2" = 0.01, "4" = 0.02, "12" = 0.03)}, but that might
+#' change in the future, so it is advised to use this function rather than
+#' explicitly using the named list in your code.
+#'
+#' @param monthly Surcharge for monthly premium payments
+#' @param quarterly Surcharge for quarterly premium payments
+#' @param semiannually Surcharge for semi-annual premium payments
+#' @param yearly Surcharge for yearly premium payments (optiona, default is no surcharge)
+#'
+#' @export
+freqCharge = function(monthly = 0, quarterly = 0, semiannually = 0, yearly = 0) {
+  # Apply the heuristics to allow percentage points given
+  if (monthly > 0.1) monthly = monthly / 100;
+  if (quarterly > 0.1) quarterly = quarterly / 100;
+  if (semiannually > 0.1) semiannually = semiannually / 100;
+  if (yearly > 0.1) yearly = yearly / 100;
+
+  # internal representation for now is a named list:
+  list("1" = yearly, "2" = semiannually, "4" = quarterly, "12" = monthly)
+}
+
+
 
 mergeValues = function(starting, ending, t) {
   # if either starting or ending is missing, always use the other, irrespective of t:
@@ -181,7 +243,7 @@ mergeValues3D = function(starting, ending, t) {
   } else if (t == 0) {
     ending
   } else {
-    abind::abind(starting[1:t,,], ending[-1:-t,,], along = 1)
+    abind::abind(starting[1:t,,,], ending[-1:-t,,,], along = 1)
   }
 }
 # Caution: px is not neccessarily 1-qx, because we might also have dread diseases so that px=1-qx-ix! However, the ix is not used for the survival present value
@@ -232,16 +294,35 @@ calculatePVGuaranteed = function(advance, arrears = c(0), ..., m = 1, mCorrectio
 calculatePVCosts = function(px = 1 - qx, qx = 1 - px, costs, ..., v = 1, start = 0) {
   l = max(length(qx), dim(costs)[1]);
   p = pad0(px, l, value = 0);
-  costs = costs[1:l,,];
+  costs = costs[1:l,,,];
 
   # Take the array structure from the cash flow array and initialize it with 0
   res = costs*0;
-  prev = res[1,,]*0;
+  prev = res[1,,,"survival"]*0;
   # Backward recursion starting from the last time:
+  # Survival Cash flows
   for (i in l:(start + 1)) {
     # cat("values at iteration ", i, ": ", v, q[i], costs[i,,], prev);
-    res[i,,] = costs[i,,] + v*p[i]*prev;
-    prev = res[i,,];
+    res[i,,,"survival"] = costs[i,,,"survival"] + v*p[i]*prev;
+    prev = res[i,,,"survival"];
+  }
+  # guaranteed cash flows (even after death)
+  prev = res[1,,,"guaranteed"]*0;
+  for (i in l:(start + 1)) {
+    res[i,,,"guaranteed"] = costs[i,,,"guaranteed"] + v*prev;
+    prev = res[i,,,"guaranteed"];
+  }
+  # Cash flows only after death
+    # This case is more complicated, as we have two possible states of
+    # payments (present value conditional on active, but payments only when
+    # dead => need to write the Thiele difference equations as a pair of
+    # recursive equations rather than a single recursive formula...)
+  prev = res[1,,,"after.death"]*0;
+  prev.dead = res[1,,,1]*0
+  for (i in l:(start + 1)) {
+    res[i,,,"after.death"] = p[i] * v * prev + (1 - p[i]) * v * prev.dead
+    prev = res[i,,,"after.death"]
+    prev.dead = costs[i,,,"after.death"] + v * prev.dead
   }
   res
 }
