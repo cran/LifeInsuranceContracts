@@ -3,9 +3,7 @@
 \docType{data}
 \name{InsuranceContract.ParameterDefaults}
 \alias{InsuranceContract.ParameterDefaults}
-\title{Default parameters for the InsuranceContract class. A new contract will be
-pre-filled with these values, and values passed in the constructor (or with
-other setter functions) will override these values.}
+\title{Default parameters for the InsuranceContract class.}
 \format{
 The parameter list is a list of lists with the following structure:
 
@@ -44,8 +42,11 @@ default = "Hauptvertrag"}
 \item{\code{$initialCapital}}{Reserve/Capital that is already available
 at contract inception, e.g. from a previous contract. No tax
 or acquisition costs are applied to this capital.}
-\item{\code{$YOB}}{Year of birth of the insured, used to determine the
+\item{\code{$YOB (deprecated)}}{Year of birth of the insured, used to determine the
 age for the application of the mortality table}
+\item{\code{$birthDate}}{Date  of birth of the insured, used to determine the
+age for the application of the mortality table. Alternatively,
+the year alone can be passed as \code{YOB}.}
 \item{\code{$age}}{Age of the insured}
 \item{\code{$technicalAge}}{Technical age of the insured (when the age
 for the application of the mortality table does not coincide
@@ -90,12 +91,6 @@ are paid in advance (default) or arrears. Value is of type
 "in arrears"}
 \item{\code{$premiumFrequency}}{Number of premium payments per year, default is 1.}
 \item{\code{$benefitFrequency}}{Number of benefit payments per year, default is 1.}
-\item{\code{$widowProportion}}{For annuities with a widow transition,
-this describes the factor of the widow benefits relative to
-the original benefit.}
-\item{\code{$deathBenefitProportion}}{For endowments with a death and
-survival benefit, this describes the proportion of the death
-benefit relative to the survival benefit.}
 \item{\code{$premiumRefund}}{Proportion of (gross) premiums refunded on
 death (including additional risk, e.g. 1.10 = 110\% of paid premiums)}
 \item{\code{$premiumIncrease}}{The yearly growth factor of the premium,
@@ -107,12 +102,20 @@ describes the annuity unit payments for all years}
 \item{\code{$deathBenefit}}{The yearly relative death benefit (relative
 to the initial sum insured); Can be set to a \code{function(len,
               params, values)}, e.g. \code{deathBenefit = deathBenefit.linearDecreasing}}
+\item{\code{$benefitParameter}}{(optional) Tariff-specific parameter to
+indicate special benefit conditions (e.g. for non-constant benefits
+the initial starting value, or a minimum benefit, etc.). This
+parameter is not used automatically, but needs to be processed
+by a custom \code{$deathBenefit} function.}
 
 \item{\code{$costWaiver}}{The fraction of the costs that are waived (only
 those cost components that are defined to be waivable, i.e. by
 defining a corresponding \code{$minCosts}). Linearly interpolates
 between \code{$Costs} and \code{$minCosts}, if the latter is set.
 Otherwise is has no effect.}
+\item{\code{$attributes}}{Additional custom attributes (as a named list),
+which can be used for particular behaviour of different contracts
+or contract slices.}
 }
 }
 
@@ -219,6 +222,10 @@ payment frequencies of more than once a year. Format is
 \code{list("1" = 0.0, "2" = 0.0, "4" = 0.0, "12" = 0.0)}}
 \item{\code{$alphaRefundPeriod}}{How long the acquisition costs should be
 (partially) refunded in case of surrender or premium waiver.}
+\item{\code{$commissionPeriod}}{Period, over which the acquisition costs
+are charged to the contract (if not fully up-front or over the
+whole contract period). This has only an effect for cost definitions
+with duration "CommissionPeriod". Default is 5 years.}
 }
 }
 
@@ -241,6 +248,17 @@ premiums, but the initial single premium is added to the reserve
 immediately for balance-sheet purposes. In particular, the
 balance sheet reserve at time $t=0$ is not 0, but the
 premium paid. In turn, no unearned premiums are applied.}
+\item{\code{$surrenderIncludesCostsReserves}}{Whether (administration)
+cost reserves are paid out on surrender (i.e. included in the
+surrender value before surrender penalties are applied)}
+\item{\code{$unitcostsInGross}}{Whether unit costs are included in the
+gross premium calculation or added after gross premiums. (default: FALSE)}
+\item{\code{$absPremiumRefund}}{Constant death benefit (typically premium
+refund of a previous contract), relative to the sum insured.}
+\item{\code{$alphaCostsCommission}}{Whether alpha costs over the commision
+period are given as their actual yearly value ("actual"), or
+whether the given value is the sum ("sum") or the present value
+("presentvalue") over the whole commission period.}
 }
 }
 
@@ -284,7 +302,13 @@ participation rates are defined at the level of profit classes.}
 \describe{
 \item{\code{$adjustCashFlows}}{Function with signature \code{function(x, params, values, ...)} to adjust the benefit/premium cash flows after their setup.}
 \item{\code{$adjustCashFlowsCosts}}{Function with signature \code{function(x, params, values, ...)} to adjust the costs cash flows after their setup.}
+\item{\code{$adjustCosts}}{Function with signature \code{function(costs, params, values, ...)} to adjust the tariff costs after their setup (e.g. contract-specific conditions/waivers, etc.).}
+\item{\code{$adjustMinCosts}}{Function with signature \code{function(minCosts, costs, params, values, ...)} to adjust the tariff minimum (unwaivable) costs after their setup (e.g. contract-specific conditions/waivers, etc.).}
+\item{\code{$adjustPresentValues}}{Adjust the present value vectors that are later used to derive premiums and reserves. \code{function(presentValues, params, values)}}
+\item{\code{$adjustPresentValuesCosts}}{Adjust the present value cost vectors used to derive premiums and reserves. \code{function(presentValuesCosts, params, values)}}
 \item{\code{$adjustPremiumCoefficients}}{Function with signature \code{function(coeff, type, premiums, params, values, premiumCalculationTime)} to adjust the coefficients for premium calculation after their default setup. Use cases are e.g. term-fix tariffs where the Zillmer premium term contains the administration cost over the whole contract, but not other gamma- or beta-costs.}
+\item{\code{$adjustPVForReserves}}{Adjust the absolute present value vectors used to derive reserves (e.g. when a sum rebate is subtracted from the gamma-cost reserves without influencing the premium calculation). \code{function(absPV, params, values)}}
+\item{\code{$premiumRebateCalculation}}{Calculate the actual premium rebate from the rebate rate (e.g. when the premium rate is given as a yearly cost reduction applied to a single-premium contract). \code{function(premiumRebateRate, params = params, values = values)}}
 }
 }
 }
@@ -292,7 +316,7 @@ participation rates are defined at the level of profit classes.}
 InsuranceContract.ParameterDefaults
 }
 \description{
-Default parameters for the InsuranceContract class. A new contract will be
+A new contract will be
 pre-filled with these values, and values passed in the constructor (or with
 other setter functions) will override these values.
 }

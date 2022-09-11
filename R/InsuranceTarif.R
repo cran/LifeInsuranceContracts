@@ -7,7 +7,8 @@
 NULL
 
 #' An enum specifying the main characteristics of the tarif.
-#' Possible values are:
+#'
+#' @description Possible values are:
 #' \describe{
 #'   \item{annuity}{Whole life or term annuity (periodic survival benefits)
 #'        with flexible payouts (constand, increasing, decreasing, arbitrary,
@@ -214,6 +215,9 @@ InsuranceTarif = R6Class(
     #' tarif.male = InsuranceTarif$new(name = "Annuity Males", type = "annuity",
     #'     i = 0.01, mortalityTable = AVOe2005R.male)
     initialize = function(name = NULL, type = "wholelife", tarif = "Generic Tarif", desc = "Description of tarif", ...) {
+      if (getOption('LIC.debug.Tarif.init', FALSE)) {
+        browser();
+      }
       if (!missing(name))           self$name = name;
       if (!missing(type)) {
         self$tariffType = TariffTypeEnum(type)
@@ -257,6 +261,9 @@ InsuranceTarif = R6Class(
     #' tarif.unisex = tarif.male$createModification(name = "Annuity unisex",
     #'     mortalityTable = AVOe2005R.unisex)
     createModification = function(name  = NULL, tarif = NULL, desc  = NULL, tariffType = NULL, ...) {
+      if (getOption('LIC.debug.createModification', FALSE)) {
+        browser();
+      }
       cloned = self$clone();
       if (!missing(name))       cloned$name = name;
       if (!missing(tarif))      cloned$tarif = tarif;
@@ -287,6 +294,9 @@ InsuranceTarif = R6Class(
     #'
     #' @param ... currently unused
     getInternalValues = function(params, ...) {
+      if (getOption('LIC.debug.getInternalValues', FALSE)) {
+        browser();
+      }
       age = params$ContractData$technicalAge
       maxAge = MortalityTables::getOmega(params$ActuarialBases$mortalityTable)
       policyPeriod = params$ContractData$policyPeriod
@@ -305,7 +315,10 @@ InsuranceTarif = R6Class(
     #' by the InsuranceContract class. It returns the relevant ages during the
     #' whole contract period
     getAges = function(params) {
-      ages = ages(params$ActuarialBases$mortalityTable, YOB = params$ContractData$YOB);
+      if (getOption('LIC.debug.getAges', FALSE)) {
+        browser();
+      }
+            ages = ages(params$ActuarialBases$mortalityTable, YOB = year(params$ContractData$birthDate));
       age = params$ContractData$technicalAge;
       if (age > 0) {
         ages = ages[-age:-1];
@@ -318,14 +331,17 @@ InsuranceTarif = R6Class(
     #'  values \code{values}
     #' @details Not to be called directly, but implicitly by the [InsuranceContract] object.
     getTransitionProbabilities = function(params, values) {
+      if (getOption('LIC.debug.getTransitionProbabilities', FALSE)) {
+        browser();
+      }
       age = params$ContractData$technicalAge;
       ages = self$getAges(params);
-      q = MortalityTables::deathProbabilities(params$ActuarialBases$mortalityTable, YOB = params$ContractData$YOB, ageDifferences = params$ContractData$ageDifferences);
+      q = MortalityTables::deathProbabilities(params$ActuarialBases$mortalityTable, YOB = year(params$ContractData$birthDate), ageDifferences = params$ContractData$ageDifferences);
       if (age > 0) {
         q    = q[-age:-1];
       }
       if (!is.null(params$ActuarialBases$invalidityTable)) {
-        i = MortalityTables::deathProbabilities(params$ActuarialBases$invalidityTable, YOB = params$ContractData$YOB, ageDifferences = params$ContractData$ageDifferences);
+        i = MortalityTables::deathProbabilities(params$ActuarialBases$invalidityTable, YOB = year(params$ContractData$birthDate), ageDifferences = params$ContractData$ageDifferences);
         if (age > 0) {
           i    = i[-age:-1];
         }
@@ -353,8 +369,13 @@ InsuranceTarif = R6Class(
     #'
     #' @param params The parameters of the contract / tariff
     getCostValues = function(params) {
+      if (getOption('LIC.debug.getCostValues', FALSE)) {
+        browser();
+      }
       costs = valueOrFunction(params$Costs, params = params, values = NULL)
+      costs = applyHook(params$Hooks$adjustCosts, costs, params = params, values = NULL);
       baseCost = valueOrFunction(params$minCosts, params = params, values = NULL, costs = costs)
+      baseCost = applyHook(params$Hooks$adjustMinCosts, baseCost, costs = costs, params = params, values = NULL);
       if (!is.null(baseCost)) {
         costWaiver = valueOrFunction(params$ContractData$costWaiver, params = params, values = NULL, costs = costs, minCosts = baseCost)
         if (is.numeric(costWaiver)) {
@@ -376,6 +397,9 @@ InsuranceTarif = R6Class(
     #' @details Not to be called directly, but implicitly by the [InsuranceContract] object.
     #' @param len The desired length of the returned data frame (the number of contract periods desire)
     getPremiumCF = function(len, params, values) {
+      if (getOption('LIC.debug.getPremiumCF', FALSE)) {
+        browser();
+      }
       premPeriod = min(params$ContractData$premiumPeriod, params$ContractData$policyPeriod, len);
       if (is.null(params$ContractData$premiumIncrease)) {
         pad0(rep(1, premPeriod - 1), len)
@@ -400,6 +424,9 @@ InsuranceTarif = R6Class(
     #' @details Not to be called directly, but implicitly by the [InsuranceContract] object.
     #' @param len The desired length of the returned data frame (the number of contract periods desire)
     getAnnuityCF = function(len, params, values) {
+      if (getOption('LIC.debug.getAnnuityCF', FALSE)) {
+        browser();
+      }
       annuityPeriod = min(params$ContractData$policyPeriod - params$ContractData$deferralPeriod, len);
       if (is.null(params$ContractData$annuityIncrease)) {
         pad0(rep(1, annuityPeriod), len);
@@ -424,6 +451,9 @@ InsuranceTarif = R6Class(
     #' @details Not to be called directly, but implicitly by the [InsuranceContract] object.
     #' @param len The desired length of the returned data frame (the number of contract periods desire)
     getDeathCF = function(len, params, values) {
+      if (getOption('LIC.debug.getDeathCF', FALSE)) {
+        browser();
+      }
       period = params$ContractData$policyPeriod - params$ContractData$deferralPeriod;
       if (is.null(params$ContractData$deathBenefit)) {
         pad0(rep(1, period), len)
@@ -445,6 +475,9 @@ InsuranceTarif = R6Class(
     #' of insurance given in the InsuranceTarif's `tariffType` field
     #' @details Not to be called directly, but implicitly by the [InsuranceContract] object.
     getBasicCashFlows = function(params, values) {
+      if (getOption('LIC.debug.getBasicCashFlows', FALSE)) {
+        browser();
+      }
       deferralPeriod = params$ContractData$deferralPeriod;
       guaranteedPeriod = params$ContractData$guaranteedPeriod;
 
@@ -495,7 +528,7 @@ InsuranceTarif = R6Class(
         }
         if (self$tariffType == "endowment" || self$tariffType == "wholelife" || self$tariffType == "endowment + dread-disease") {
           cf$death = c(rep(0, deferralPeriod), deathCF, 0)
-          cf$sumInsured = c(rep(0, deferralPeriod), deathCF, 1);
+          # cf$sumInsured = c(rep(0, deferralPeriod), deathCF, 1);
         }
         if (self$tariffType == "endowment + dread-disease") {
           cf$disease = c(
@@ -510,6 +543,9 @@ InsuranceTarif = R6Class(
     #' @description Returns the cash flows for the contract given the parameters
     #' @details Not to be called directly, but implicitly by the [InsuranceContract] object.
     getCashFlows = function(params, values) {
+      if (getOption('LIC.debug.getCashFlows', FALSE)) {
+        browser();
+      }
       age = params$ContractData$technicalAge;
 
       if (is.null(values$cashFlowsBasic)) {
@@ -556,6 +592,9 @@ InsuranceTarif = R6Class(
 
       # Death Benefits
       cf$death_SumInsured = pad0(values$cashFlowsBasic$death, cflen);
+      if ((!is.null(params$Features$absPremiumRefund)) && (params$Features$absPremiumRefund > 0)) {
+        cf$death_SumInsured = cf$death_SumInsured + pad0(padLast(params$Features$absPremiumRefund, cflen - 1), cflen);
+      }
       cf$disease_SumInsured = pad0(values$cashFlowsBasic$disease, cflen);
       cf$death_PremiumFree = cf$death_SumInsured;
       # premium refund
@@ -575,6 +614,9 @@ InsuranceTarif = R6Class(
     #'  and tariff parameters
     #' @details Not to be called directly, but implicitly by the [InsuranceContract] object.
     getCashFlowsCosts = function(params, values) {
+      if (getOption('LIC.debug.getCashFlowsCosts', FALSE)) {
+        browser();
+      }
       dm = dim(params$Costs);
       dmnames = dimnames(params$Costs);
 
@@ -601,6 +643,31 @@ InsuranceTarif = R6Class(
         cf[i,,,"after.death"] = params$Costs[,,"AfterDeath"]
       }
 
+      # Costs charged only for a specific time (i.e. acquisition costs / commissions)
+      # There are several conventions to scale alpha costs over the commision period:
+      # a) alpha cost once (i.e. not distributed), not scaled
+      # b) uniformly over the period (i.e. sum of k equal commisions is given as cost)
+      # c) by present value (i.e. present value of k equal commission is given as cost)
+      if (params$Features$alphaCostsCommission == "sum") {
+          params$Costs[,,"CommissionPeriod"] = params$Costs[,,"CommissionPeriod"] / params$Loadings$commissionPeriod
+      } else if (params$Features$alphaCostsCommission == "presentvalue") {
+          # Use yearly constant premiums in advance, irrespective of the actual
+          # contract. This is a simplification, but the actual present values
+          # are calculated later, so for now we just assume standard parameters!
+          len = params$Loadings$commissionPeriod;
+          q = self$getTransitionProbabilities(params);
+          px = pad0(c(1,q$p), len); # by defualt, premiums are in advance, so first payment has 100% probability
+          v = 1/(1 + params$ActuarialBases$i)^((1:len)-1)
+          params$Costs[,,"CommissionPeriod"] = params$Costs[,,"CommissionPeriod"] / sum(cumprod(px)*v)
+      } else if (params$Features$alphaCostsCommission == "actual") {
+          # NOP, nothing to do
+      } else {
+          warning("unrecognized value given for commissionPeriod: ",params$Features$alphaCostsCommission )
+      }
+      for (i in 1:params$Loadings$commissionPeriod) {
+          cf[i,,,"survival"] = cf[i,,,"survival"] + params$Costs[,,"CommissionPeriod"];
+      }
+
       # After premiums are waived, use the gamma_nopremiums instead of gamma:
       if (params$ContractState$premiumWaiver) {
         cf[,"gamma",,"survival"] = cf[,"gamma_nopremiums",,"survival"];
@@ -617,7 +684,10 @@ InsuranceTarif = R6Class(
     #' (cash flows already calculated and stored in the \code{cashFlows} data.frame)
     #' @details Not to be called directly, but implicitly by the [InsuranceContract] object.
     #' @param cashFlows data.frame of cash flows calculated by a call to \href{#method-getCashFlows}{\code{InsuranceTarif$getCashFlows()}}
-    presentValueCashFlows = function(cashFlows, params, values) {
+    presentValueCashFlows = function(params, values) {
+      if (getOption('LIC.debug.presentValueCashFlows', FALSE)) {
+        browser();
+      }
 
       qq = self$getTransitionProbabilities(params);
       qx = pad0(qq$q, values$int$l);
@@ -626,12 +696,12 @@ InsuranceTarif = R6Class(
 
       i = params$ActuarialBases$i;
       v = 1/(1 + i);
-      benefitFreqCorr = correctionPaymentFrequency(i = i,
-                                                   m = params$ContractData$benefitFrequency,
-                                                   order = params$ActuarialBases$benefitFrequencyOrder);
-      premiumFreqCorr = correctionPaymentFrequency(i = i,
-                                                   m = params$ContractData$premiumFrequency,
-                                                   order = params$ActuarialBases$premiumFrequencyOrder);
+            benefitFreqCorr = correctionPaymentFrequency(
+              i = i, m = params$ContractData$benefitFrequency,
+              order = valueOrFunction(params$ActuarialBases$benefitFrequencyOrder, params = params, values = values));
+            premiumFreqCorr = correctionPaymentFrequency(
+              i = i, m = params$ContractData$premiumFrequency,
+              order = valueOrFunction(params$ActuarialBases$premiumFrequencyOrder, params = params, values = values));
 
       pvRefund = calculatePVDeath(px, qx, values$cashFlows$death_GrossPremium, v = v);
       pvRefundPast = calculatePVDeath(
@@ -672,21 +742,25 @@ InsuranceTarif = R6Class(
       );
 
       rownames(pv) <- pad0(rownames(qq), values$int$l);
-      pv
+      applyHook(hook = params$Hooks$adjustPresentValues, val = pv, params = params, values = values)
     },
 
     #' @description Calculates the present values of the cost cash flows of the
     #' contract (cost cash flows alreay calculated by \href{#method-getCashFlowsCosts}{\code{InsuranceTarif$getCashFlowsCosts()}}
     #' and stored in the \code{values} list
     #' @details Not to be called directly, but implicitly by the [InsuranceContract] object.
-    presentValueCashFlowsCosts = function(params, values) {
+    #' @param presentValues The present values of the insurance claims (without costs)
+    presentValueCashFlowsCosts = function(params, values, presentValues) {
+      if (getOption('LIC.debug.presentValueCashFlowsCosts', FALSE)) {
+        browser();
+      }
       len = values$int$l;
       q = self$getTransitionProbabilities(params);
       qx = pad0(q$q, len);
       px = pad0(q$p, len);
       v = 1/(1 + params$ActuarialBases$i)
       pvc = calculatePVCosts(px, qx, values$cashFlowsCosts, v = v);
-      pvc
+      applyHook(hook = params$Hooks$adjustPresentValuesCosts, val = pvc, params = params, values = values, presentValues = presentValues)
     },
 
     #' @description Calculate the cash flows in monetary terms of the insurance contract
@@ -697,6 +771,9 @@ InsuranceTarif = R6Class(
     #'
     #' This method is NOT to be called directly, but implicitly by the [InsuranceContract] object.
     getAbsCashFlows = function(params, values) {
+      if (getOption('LIC.debug.getAbsCashFlows', FALSE)) {
+        browser();
+      }
 
         # TODO: Set up a nice list with coefficients for each type of cashflow,
         # rather than multiplying each item manually (this also mitigates the risk
@@ -743,6 +820,9 @@ InsuranceTarif = R6Class(
     #'
     #' This method is NOT to be called directly, but implicitly by the [InsuranceContract] object.
     getAbsPresentValues = function(params, values) {
+      if (getOption('LIC.debug.getAbsPresentValues', FALSE)) {
+        browser();
+      }
       pv = values$presentValues;
 
       #pv[,"age"] = pv[,"premiums"];
@@ -774,6 +854,9 @@ InsuranceTarif = R6Class(
     #'
     #' This method is NOT to be called directly, but implicitly by the [InsuranceContract] object.
     presentValueBenefits = function(params, values) {
+      if (getOption('LIC.debug.presentValueBenefits', FALSE)) {
+        browser();
+      }
       # TODO: Here we don't use the securityLoading parameter => Shall it be used or are these values to be understood without additional security loading?
       benefits    = values$presentValues[,"survival"] +
                     values$presentValues[,"guaranteed"] +
@@ -814,6 +897,9 @@ InsuranceTarif = R6Class(
     #'         (e.g. for net and Zillmer, the gross premium has already been
     #'         calculated to allow modelling the premium refund)
     getPremiumCoefficients = function(type = "gross", coeffBenefits, coeffCosts, premiums, params, values, premiumCalculationTime = values$int$premiumCalculationTime) {
+      if (getOption('LIC.debug.getPremiumCoefficients', FALSE)) {
+        browser();
+      }
       # Merge a possibly passed loadings override with the defaults of this class:
       securityLoading = valueOrFunction(params$Loadings$security, params = params, values = values);
       t = as.character(premiumCalculationTime)
@@ -849,35 +935,25 @@ InsuranceTarif = R6Class(
       # coefficients for the costs
 
       if (type == "gross") {
-        coeff[["SumInsured"]][["costs"]]["alpha", "SumInsured",] = 1;
-        coeff[["SumInsured"]][["costs"]]["beta",  "SumInsured",] = 1;
-        coeff[["SumInsured"]][["costs"]]["gamma", "SumInsured",] = 1;
+        affected = c("alpha", "beta", "gamma")
+        if (params$Features$unitcostsInGross) {
+          affected = c(affected, "unitcosts")
+        }
+        coeff[["SumInsured"]][["costs"]][affected, "SumInsured",  ] = 1;
         # TODO: How to handle beta costs proportional to Sum Insured
-        coeff[["Premium"]][["costs"]]["alpha", "SumPremiums",] = -values$unitPremiumSum;
-        coeff[["Premium"]][["costs"]]["beta",  "SumPremiums",] = -values$unitPremiumSum;
-        coeff[["Premium"]][["costs"]]["gamma", "SumPremiums",] = -values$unitPremiumSum;
-
-        coeff[["Premium"]][["costs"]]["alpha", "GrossPremium",] = -1;
-        coeff[["Premium"]][["costs"]]["beta",  "GrossPremium",] = -1;
-        coeff[["Premium"]][["costs"]]["gamma", "GrossPremium",] = -1;
-
-        coeff[["SumInsured"]][["costs"]]["alpha", "Constant",] = 1 / params$ContractData$sumInsured;
-        coeff[["SumInsured"]][["costs"]]["beta",  "Constant",] = 1 / params$ContractData$sumInsured;
-        coeff[["SumInsured"]][["costs"]]["gamma", "Constant",] = 1 / params$ContractData$sumInsured;
+        coeff[["Premium"]]   [["costs"]][affected, "SumPremiums", ] = -values$unitPremiumSum;
+        coeff[["Premium"]]   [["costs"]][affected, "GrossPremium",] = -1;
+        coeff[["SumInsured"]][["costs"]][affected, "Constant",    ] = 1 / params$ContractData$sumInsured;
 
       } else if (type == "Zillmer") {
           # TODO: Include costs with basis NetPremium and fixed costs!
-        coeff[["SumInsured"]][["costs"]]["Zillmer","SumInsured",] = 1;
-        coeff[["SumInsured"]][["costs"]]["Zillmer","SumPremiums",] = values$unitPremiumSum * premiums[["unit.gross"]];
-        coeff[["SumInsured"]][["costs"]]["Zillmer","GrossPremium",] = premiums[["unit.gross"]];
+        affected = c("Zillmer")
         if (params$Features$betaGammaInZillmer) {
-          coeff[["SumInsured"]][["costs"]]["beta",  "SumInsured",] = 1;
-          coeff[["SumInsured"]][["costs"]]["gamma", "SumInsured",] = 1;
-          coeff[["SumInsured"]][["costs"]]["beta",  "SumPremiums",] = values$unitPremiumSum * premiums[["unit.gross"]];
-          coeff[["SumInsured"]][["costs"]]["gamma", "SumPremiums",] = values$unitPremiumSum * premiums[["unit.gross"]];
-          coeff[["SumInsured"]][["costs"]]["beta",  "GrossPremium",] = premiums[["unit.gross"]];
-          coeff[["SumInsured"]][["costs"]]["gamma", "GrossPremium",] = premiums[["unit.gross"]];
+          affected = c(affected, "beta", "gamma")
         }
+        coeff[["SumInsured"]][["costs"]][affected,"SumInsured",  ] = 1;
+        coeff[["SumInsured"]][["costs"]][affected,"SumPremiums", ] = values$unitPremiumSum * premiums[["unit.gross"]];
+        coeff[["SumInsured"]][["costs"]][affected,"GrossPremium",] = premiums[["unit.gross"]];
       }
 
       applyHook(params$Hooks$adjustPremiumCoefficients, coeff, type = type, premiums = premiums, params = params, values = values, premiumCalculationTime = premiumCalculationTime)
@@ -889,6 +965,9 @@ InsuranceTarif = R6Class(
     #'
     #' @details Not to be called directly, but implicitly by the [InsuranceContract] object.
     premiumCalculation = function(params, values, premiumCalculationTime = values$int$premiumCalculationTime) {
+      if (getOption('LIC.debug.premiumCalculation', FALSE)) {
+        browser();
+      }
       loadings = params$Loadings;
       sumInsured = params$ContractData$sumInsured
       values$premiums = c(
@@ -939,7 +1018,9 @@ InsuranceTarif = R6Class(
       noMedicalExam.relative = valueOrFunction(loadings$noMedicalExamRelative,params = params, values = values);
       extraRebate   = valueOrFunction(loadings$extraRebate,  params = params, values = values);
       sumRebate     = valueOrFunction(loadings$sumRebate,    params = params, values = values);
-      premiumRebate = valueOrFunction(loadings$premiumRebate,params = params, values = values);
+      premiumRebateRate = valueOrFunction(loadings$premiumRebate,params = params, values = values);
+      premiumRebate = applyHook(params$Hooks$premiumRebateCalculation, premiumRebateRate, params = params, values = values);
+
       extraChargeGrossPremium = valueOrFunction(loadings$extraChargeGrossPremium, params = params, values = values);
       advanceProfitParticipation = 0;
       advanceProfitParticipationUnitCosts = 0;
@@ -964,11 +1045,13 @@ InsuranceTarif = R6Class(
       values$premiums[["unitcost"]] = premium.unitcosts;
 
 
-      frequencyLoading = valueOrFunction(loadings$premiumFrequencyLoading, params = params, values = values);
-      premiumBeforeTax = (values$premiums[["unit.gross"]]*(1 + noMedicalExam.relative + extraChargeGrossPremium) + noMedicalExam - sumRebate - extraRebate) * sumInsured * (1 - advanceProfitParticipation) + premium.unitcosts;
+      frequencyLoading = self$evaluateFrequencyLoading(loadings$premiumFrequencyLoading, params$ContractData$premiumFrequency, params = params, values = values)
+      premiumBeforeTax = (values$premiums[["unit.gross"]]*(1 + noMedicalExam.relative + extraChargeGrossPremium) + noMedicalExam - sumRebate - extraRebate) * sumInsured * (1 - advanceProfitParticipation);
+      if (!params$Features$unitcostsInGross) {
+        premiumBeforeTax = premiumBeforeTax + premium.unitcosts;
+      }
       premiumBeforeTax = premiumBeforeTax * (1 - premiumRebate - advanceProfitParticipationUnitCosts - partnerRebate);
-      # TODO / FIXME: Add a check that frequencyLoading has an entry for the premiumFrequency -> Otherwise do not add any loading (currently NULL is returned, basically setting all premiums to NULL)
-      premiumBeforeTax.y = premiumBeforeTax * (1 + frequencyLoading[[toString(params$ContractData$premiumFrequency)]]);
+            premiumBeforeTax.y = premiumBeforeTax * (1 + frequencyLoading);
       premiumBeforeTax = premiumBeforeTax.y / params$ContractData$premiumFrequency;
       values$premiums[["written_yearly"]] = premiumBeforeTax.y * (1 + tax)
       values$premiums[["written_beforetax"]] = premiumBeforeTax;
@@ -984,24 +1067,29 @@ InsuranceTarif = R6Class(
     #'
     #' @details Not to be called directly, but implicitly by the [InsuranceContract] object.
     reserveCalculation = function(params, values) {
+      if (getOption('LIC.debug.reserveCalculation', FALSE)) {
+        browser();
+      }
       t = "0"
       securityFactor = (1 + valueOrFunction(params$Loadings$security, params = params, values = values));
       ppScheme      = params$ProfitParticipation$profitParticipationScheme;
 
+      absPV = applyHook(params$Hooks$adjustPVForReserves, values$absPresentValues, params = params, values = values);
+
       # Net, Zillmer and Gross reserves
-      resNet = values$absPresentValues[,"benefitsAndRefund"] * securityFactor - values$premiums[["net"]] * values$absPresentValues[,"premiums.unit"];
-      BWZcorr = ifelse(values$absPresentValues[t, "premiums"] == 0, 0,
-                       values$absPresentValues[t, "Zillmer"] / values$absPresentValues[t, "premiums"]) * values$absPresentValues[,"premiums"];
+      resNet = absPV[,"benefitsAndRefund"] * securityFactor - values$premiums[["net"]] * absPV[,"premiums.unit"];
+      BWZcorr = ifelse(absPV[t, "premiums"] == 0, 0,
+                       absPV[t, "Zillmer"] / absPV[t, "premiums"]) * absPV[,"premiums"];
       resZ = resNet - BWZcorr;
 
-      resAdeq = values$absPresentValues[,"benefitsAndRefund"] * securityFactor +
-        values$absPresentValues[,"alpha"] + values$absPresentValues[,"beta"] + values$absPresentValues[,"gamma"] -
-        values$premiums[["gross"]] * values$absPresentValues[,"premiums.unit"];
+      resAdeq = absPV[,"benefitsAndRefund"] * securityFactor +
+          absPV[,"alpha"] + absPV[,"beta"] + absPV[,"gamma"] -
+        values$premiums[["gross"]] * absPV[,"premiums.unit"];
 
-      #values$premiums[["Zillmer"]] * values$absPresentValues[,"premiums"];
-      resGamma = values$absPresentValues[,"gamma"] -
-        ifelse(values$absPresentValues[t, "premiums"] == 0, 0,
-               values$absPresentValues[t, "gamma"] / values$absPresentValues[t, "premiums"]) * values$absPresentValues[,"premiums"]
+      #values$premiums[["Zillmer"]] * absPV[,"premiums"];
+      resGamma = absPV[,"gamma"] -
+        ifelse(absPV[t, "premiums"] == 0, 0,
+               absPV[t, "gamma"] / absPV[t, "premiums"]) * absPV[,"premiums"]
 
       advanceProfitParticipation = 0;
       if (!is.null(ppScheme)) {
@@ -1030,7 +1118,11 @@ InsuranceTarif = R6Class(
       }
 
       # Reduction Reserve: Reserve used for contract modifications:
-      resReduction = pmax(0, resZ + resGamma + alphaRefund) # V_{x,n}^{Rkf}
+      resReduction = resZ + alphaRefund;
+      if (params$Features$surrenderIncludesCostsReserves) {
+        resReduction = resReduction + resGamma;
+      }
+      resReduction = pmax(0,resReduction) # V_{x,n}^{Rkf}
 
       # Collect all reserves to one large matrix
       res = cbind(
@@ -1045,7 +1137,7 @@ InsuranceTarif = R6Class(
             "reduction"   = resReduction
             #, "Reserve.premiumfree"=res.premiumfree, "Reserve.gamma.premiumfree"=res.gamma.premiumfree);
       );
-      rownames(res) <- rownames(values$absPresentValues);
+      rownames(res) <- rownames(absPV);
       values$reserves = res;
 
       # The surrender value functions can have arbitrary form, so we store a function
@@ -1075,9 +1167,9 @@ InsuranceTarif = R6Class(
         premiumfreeValue = surrenderValue
       }
       Storno = 0; # TODO: Implement storno costs
-      premiumfreePV = (values$absPresentValues[, "benefits"] * securityFactor + values$absPresentValues[, "gamma_nopremiums"]); # PV of future premium free claims + costs
+      premiumfreePV = (absPV[, "benefits"] * securityFactor + absPV[, "gamma_nopremiums"]); # PV of future premium free claims + costs
       newSI = ifelse(premiumfreePV == 0, 0,
-        (premiumfreeValue - values$absPresentValues[,"death_Refund_past"] * securityFactor - c(Storno)) /
+        (premiumfreeValue - absPV[,"death_Refund_past"] * securityFactor - c(Storno)) /
         premiumfreePV * params$ContractData$sumInsured);
 
       cbind(res,
@@ -1094,6 +1186,9 @@ InsuranceTarif = R6Class(
     #' @param years how many years to calculate (for some usances, the factor
     #'      is different in leap years!)
     getBalanceSheetReserveFactor = function(method, params, years = 1) {
+      if (getOption('LIC.debug.getBalanceSheetReserveFactor', FALSE)) {
+        browser();
+      }
       balanceDate = params$ActuarialBases$balanceSheetDate
       year(balanceDate) = year(params$ContractData$contractClosing);
       if (balanceDate < params$ContractData$contractClosing) {
@@ -1124,6 +1219,9 @@ InsuranceTarif = R6Class(
     #'              the yearly reference date of the contract
     #' @details Not to be called directly, but implicitly by the [InsuranceContract] object.
     reserveCalculationBalanceSheet = function(params, values) {
+      if (getOption('LIC.debug.reserveCalculationBalanceSheet', FALSE)) {
+        browser();
+      }
       reserves = values$reserves;
       years = length(reserves[,"Zillmer"]);
       # Balance sheet reserves:
@@ -1144,7 +1242,7 @@ InsuranceTarif = R6Class(
           freq = params$ContractData$premiumFrequency
           bm = month(params$ContractData$contractClosing)
 
-          fact = (month(factors$date) - bm + 12 + 1) %% (12/freq) * (freq/12)
+                    fact = (bm - month(factors$date) + 12 - 1) %% (12/freq) * (freq/12)
         }
         # TODO: We have no vector of actual written premiums (implicit assumption
         # seems to be that the premium stays constant!). Once we have such a vector,
@@ -1181,7 +1279,10 @@ InsuranceTarif = R6Class(
     #' @param ... Additional parameters for the profit participation calculation, passed
     #'            through to the profit participation scheme's \href{../../LifeInsuranceContracts/html/ProfitParticipation.html#method-getProfitParticipation}{\code{ProfitParticipation$getProfitParticipation()}}
     calculateProfitParticipation = function(params, ...) {
-        ppScheme = params$ProfitParticipation$profitParticipationScheme;
+      if (getOption('LIC.debug.calculateProfitParticipation', FALSE)) {
+        browser();
+      }
+      ppScheme = params$ProfitParticipation$profitParticipationScheme;
         if (!is.null(ppScheme)) {
             ppScheme$getProfitParticipation(params = params, ...)
         }
@@ -1192,14 +1293,20 @@ InsuranceTarif = R6Class(
     #' @param profitScenario The ID of the profit scenario for which to calculate the reserves
     #' @param ... TODO
     reservesAfterProfit = function(profitScenario, params, values, ...) {
-        # TODO
+      if (getOption('LIC.debug.reservesAfterProfit', FALSE)) {
+        browser();
+      }
+      # TODO
     },
 
 
     #' @description Return the time series of the basic contract
     #' @details Not to be called directly, but implicitly by the [InsuranceContract] object.
     getBasicDataTimeseries = function(params, values) {
-        res = cbind(
+      if (getOption('LIC.debug.getBasicDataTimeseries', FALSE)) {
+        browser();
+      }
+      res = cbind(
             "PremiumPayment" = values$premiumComposition[, "charged"] > 0,
             "SumInsured" = values$reserves[, "SumInsured"],
             "Premiums" = values$absCashFlows$premiums_advance + values$absCashFlows$premiums_arrears,
@@ -1215,6 +1322,9 @@ InsuranceTarif = R6Class(
     #' @details Not to be called directly, but implicitly by the [InsuranceContract] object.
     #'          All premiums, reserves and present values have already been calculated.
     premiumDecomposition = function(params, values) {
+      if (getOption('LIC.debug.premiumDecomposition', FALSE)) {
+        browser();
+      }
       loadings   = params$Loadings;
       sumInsured = params$ContractData$sumInsured;
       premiums   = values$premiums;
@@ -1252,8 +1362,13 @@ InsuranceTarif = R6Class(
       # unit costs
       unitCosts        = premiums[["unitcost"]];
       # unit costs are only charged if a premium is paid, so exclude all times with premium==0!
-      afterUnitCosts   = afterProfit + (afterProfit != 0)*unitCosts;
-      unitcosts        = afterUnitCosts - afterProfit;
+      if (!params$Features$unitcostsInGross) {
+          afterUnitCosts   = afterProfit + (afterProfit != 0)*unitCosts;
+          unitcosts        = afterUnitCosts - afterProfit;
+      } else {
+          afterUnitCosts   = afterProfit;
+          unitcosts        = 0;
+      }
 
       # advance profit participation, Part 2:
       advanceProfitParticipationUnitCosts = 0;
@@ -1264,7 +1379,9 @@ InsuranceTarif = R6Class(
       profits.advance  = profits.advance + afterProfit - afterUnitCosts;
 
       # premium rebate
-      premiumRebate    = valueOrFunction(loadings$premiumRebate,params = params, values = values);
+      premiumRebateRate = valueOrFunction(loadings$premiumRebate,params = params, values = values);
+      premiumRebate = applyHook(params$Hooks$premiumRebateCalculation, premiumRebateRate, params = params, values = values);
+
       afterPremiumRebate = afterUnitCosts * (1 - premiumRebate);
       rebate.premium   = afterPremiumRebate - afterUnitCosts;
 
@@ -1277,9 +1394,9 @@ InsuranceTarif = R6Class(
       afterRebates     = afterProfit + rebate.premium + rebate.partner;
 
       # premium frequency loading
-      frequencyLoading = valueOrFunction(params$Loadings$premiumFrequencyLoading, params = params, values = values);
+            frequencyLoading = self$evaluateFrequencyLoading(loadings$premiumFrequencyLoading, params$ContractData$premiumFrequency, params = params, values = values)
 
-      afterFrequency   = afterRebates * (1 + frequencyLoading[[toString(params$ContractData$premiumFrequency)]]);
+            afterFrequency   = afterRebates * (1 + frequencyLoading);
       charge.frequency = afterFrequency - afterRebates;
 
       # insurance tax
@@ -1406,6 +1523,29 @@ InsuranceTarif = R6Class(
       apply(values, 2, pv)
     },
 
+        #' @description Calculate the premium frequency loading, i.e. the surcharge
+        #' on the premium for those cases where the premium is not paid yearly.
+        #' Return values can be either a numeric value or a named list with all
+        #' possible premium frequencies as keys.
+        #' @param loading The premiumFrequencyLoading parameter of the Contract or Tariff to be evaluated
+        #' @param frequency The premiumFrequency parameter of the contract
+        evaluateFrequencyLoading = function(loading, frequency, params, values) {
+            frequencyLoading = valueOrFunction(loading, frequency = frequency, params = params, values = values);
+            if (is.null(frequencyLoading)) {
+              0
+            } else if (is.list(frequencyLoading)) {
+                if (as.character(frequency) %in% names(frequencyLoading)) {
+                    frequencyLoading[[as.character(frequency)]]
+                } else {
+                    warning("Unable to handle premium frequency ", frequency, " with the given loading ", frequencyLoading);
+                }
+            } else if (is.numeric(frequencyLoading)) {
+                frequencyLoading
+            } else {
+                warning("premiumFrequencyLoading must be a number or a named list, given: ", frequencyLoading);
+                0
+            }
+        },
 
 
 

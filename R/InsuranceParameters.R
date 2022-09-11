@@ -43,7 +43,7 @@ setCost = function(costs, type, basis = "SumInsured", frequency = "PolicyPeriod"
 #' \describe{
 #'     \item{CostType:}{alpha, Zillmer, beta, gamma, gamma_nopremiums, unitcosts}
 #'     \item{Basis:}{SumInsured, SumPremiums, GrossPremium, NetPremium, Constant}
-#'     \item{Period:}{once, PremiumPeriod, PremiumFree, PolicyPeriod}
+#'     \item{Period:}{once, PremiumPeriod, PremiumFree, PolicyPeriod, CommissionPeriod}
 #' }
 #' This cost structure can then be modified for non-standard costs using the [setCost()] function.
 #' The main purpose of this structure is to be passed to [InsuranceContract] or
@@ -52,6 +52,13 @@ setCost = function(costs, type, basis = "SumInsured", frequency = "PolicyPeriod"
 #'
 #' @param costs (optional) existing cost structure to duplicate / use as a starting point
 #' @param alpha Alpha costs (charged once, relative to sum of premiums)
+#' @param alpha.commission Alpha costs (charged during the commission period,
+#'                         relative to sum of premiums; Use the \code{commissionPeriod}
+#'                         and \code{alphaCostsCommission} contract parameters
+#'                         to set the length of the commission period and whether
+#'                         the \code{alpha.commission} val´ue is understood as yearly
+#'                         cost or the sum or present value of the commission
+#'                         charges over the whole commission period)
 #' @param Zillmer Zillmer costs (charged once, relative to sum of premiums)
 #' @param beta Collection costs (charged on each gross premium, relative to gross premium)
 #' @param gamma Administration costs while premiums are paid (relative to sum insured)
@@ -90,12 +97,12 @@ setCost = function(costs, type, basis = "SumInsured", frequency = "PolicyPeriod"
 #'
 #'
 #' @export
-initializeCosts = function(costs, alpha, Zillmer, beta, gamma, gamma.paidUp, gamma.premiumfree, gamma.contract, gamma.afterdeath, gamma.fullcontract, unitcosts, unitcosts.PolicyPeriod) {
+initializeCosts = function(costs, alpha, Zillmer, alpha.commission, beta, gamma, gamma.paidUp, gamma.premiumfree, gamma.contract, gamma.afterdeath, gamma.fullcontract, unitcosts, unitcosts.PolicyPeriod) {
     if (missing(costs)) {
         dimnm = list(
             type = c("alpha", "Zillmer", "beta", "gamma", "gamma_nopremiums", "unitcosts"),
             basis = c("SumInsured", "SumPremiums", "GrossPremium", "NetPremium", "Constant", "Reserve"),
-            frequency = c("once", "PremiumPeriod", "PremiumFree", "PolicyPeriod", "AfterDeath", "FullContract")
+            frequency = c("once", "PremiumPeriod", "PremiumFree", "PolicyPeriod", "AfterDeath", "FullContract", "CommissionPeriod")
         );
         costs = array(
             0,
@@ -104,7 +111,11 @@ initializeCosts = function(costs, alpha, Zillmer, beta, gamma, gamma.paidUp, gam
         );
     }
     if (!missing(alpha)) {
-      costs = setCost(costs, "alpha",  "SumPremiums", "once", alpha)
+        costs = setCost(costs, "alpha",  "SumPremiums", "once", alpha)
+    }
+    if (!missing(alpha.commission)) {
+        costs = setCost(costs, "alpha",  "SumPremiums", "CommissionPeriod", alpha.commission)
+        costs = setCost(costs, "Zillmer",  "SumPremiums", "CommissionPeriod", alpha.commission)
     }
     if (!missing(Zillmer)) {
       costs = setCost(costs, "Zillmer","SumPremiums", "once", Zillmer)
@@ -127,11 +138,11 @@ initializeCosts = function(costs, alpha, Zillmer, beta, gamma, gamma.paidUp, gam
     }
     if (!missing(gamma.afterdeath))  {
       costs = setCost(costs, "gamma", "SumInsured", "AfterDeath", gamma.afterdeath)
-      # costs = setCost(costs, "gamma_nopremiums", "SumInsured", "AfterDeath", gamma.afterdeath)
+      costs = setCost(costs, "gamma_nopremiums", "SumInsured", "AfterDeath", gamma.afterdeath)
     }
     if (!missing(gamma.fullcontract))  {
       costs = setCost(costs, "gamma", "SumInsured", "FullContract", gamma.fullcontract)
-      # costs = setCost(costs, "gamma_nopremiums", "SumInsured", "FullContract", gamma.fullcontract)
+      costs = setCost(costs, "gamma_nopremiums", "SumInsured", "FullContract", gamma.fullcontract)
     }
     if (!missing(unitcosts)) {
       costs = setCost(costs, "unitcosts", "Constant", "PremiumPeriod", unitcosts)
@@ -159,6 +170,25 @@ costs.baseAlpha = function(alpha) {
     if (costs["Zillmer", "SumPremiums", "once"] != 0) {
       costs = setCost(costs, "Zillmer", "SumPremiums", "once", alpha)
     }
+    costs
+  }
+}
+
+#' Helper function to modify alpha costs of an insurance contract individually
+#'
+#' Returns a function that modifies alpha (and Zillmer) costs by the given scale,
+#' but otherwise uses the full costs defined by the Costs parameter.
+#'
+#' This function can be set as adjustCosts or adjustMinCosts hook parameters
+#' for a tariff or contract and can be used to apply cost adjustments on a
+#' per-contract basis.
+#'
+#' @param scale The scale for  alpha / Zillmer cost
+#'
+#' @export
+costs.scaleAlpha = function(scale) {
+  function(costs, ...) {
+    costs[c("alpha", "Zillmer"),,] = costs[c("alpha", "Zillmer"),,] * scale
     costs
   }
 }
@@ -207,7 +237,10 @@ InsuranceContract.Values = list(
 );
 
 # InsuranceContract.ParameterDefaults #######################################
-#' Default parameters for the InsuranceContract class. A new contract will be
+#
+#' Default parameters for the InsuranceContract class.
+#'
+#' A new contract will be
 #' pre-filled with these values, and values passed in the constructor (or with
 #' other setter functions) will override these values.
 #'
@@ -249,8 +282,11 @@ InsuranceContract.Values = list(
 #'     \item{\code{$initialCapital}}{Reserve/Capital that is already available
 #'               at contract inception, e.g. from a previous contract. No tax
 #'               or acquisition costs are applied to this capital.}
-#'     \item{\code{$YOB}}{Year of birth of the insured, used to determine the
+#'     \item{\code{$YOB (deprecated)}}{Year of birth of the insured, used to determine the
 #'               age for the application of the mortality table}
+#'     \item{\code{$birthDate}}{Date  of birth of the insured, used to determine the
+#'               age for the application of the mortality table. Alternatively,
+#'               the year alone can be passed as \code{YOB}.}
 #'     \item{\code{$age}}{Age of the insured}
 #'     \item{\code{$technicalAge}}{Technical age of the insured (when the age
 #'               for the application of the mortality table does not coincide
@@ -295,12 +331,6 @@ InsuranceContract.Values = list(
 #'               "in arrears"}
 #'     \item{\code{$premiumFrequency}}{Number of premium payments per year, default is 1.}
 #'     \item{\code{$benefitFrequency}}{Number of benefit payments per year, default is 1.}
-#'     \item{\code{$widowProportion}}{For annuities with a widow transition,
-#'               this describes the factor of the widow benefits relative to
-#'               the original benefit.}
-#'     \item{\code{$deathBenefitProportion}}{For endowments with a death and
-#'               survival benefit, this describes the proportion of the death
-#'               benefit relative to the survival benefit.}
 #'     \item{\code{$premiumRefund}}{Proportion of (gross) premiums refunded on
 #'               death (including additional risk, e.g. 1.10 = 110% of paid premiums)}
 #'     \item{\code{$premiumIncrease}}{The yearly growth factor of the premium,
@@ -312,12 +342,20 @@ InsuranceContract.Values = list(
 #'     \item{\code{$deathBenefit}}{The yearly relative death benefit (relative
 #'               to the initial sum insured); Can be set to a \code{function(len,
 #'               params, values)}, e.g. \code{deathBenefit = deathBenefit.linearDecreasing}}
+#'     \item{\code{$benefitParameter}}{(optional) Tariff-specific parameter to
+#'               indicate special benefit conditions (e.g. for non-constant benefits
+#'               the initial starting value, or a minimum benefit, etc.). This
+#'               parameter is not used automatically, but needs to be processed
+#'               by a custom \code{$deathBenefit} function.}
 #'
 #'    \item{\code{$costWaiver}}{The fraction of the costs that are waived (only
 #'               those cost components that are defined to be waivable, i.e. by
 #'               defining a corresponding \code{$minCosts}). Linearly interpolates
 #'               between \code{$Costs} and \code{$minCosts}, if the latter is set.
 #'               Otherwise is has no effect.}
+#'    \item{\code{$attributes}}{Additional custom attributes (as a named list),
+#'               which can be used for particular behaviour of different contracts
+#'               or contract slices.}
 #' }
 #'
 #' ## Elements of sublist \code{InsuranceContract.ParameterDefault$ContractState}
@@ -421,6 +459,10 @@ InsuranceContract.Values = list(
 #'               \code{list("1" = 0.0, "2" = 0.0, "4" = 0.0, "12" = 0.0)}}
 #'     \item{\code{$alphaRefundPeriod}}{How long the acquisition costs should be
 #'               (partially) refunded in case of surrender or premium waiver.}
+#'     \item{\code{$commissionPeriod}}{Period, over which the acquisition costs
+#'               are charged to the contract (if not fully up-front or over the
+#'               whole contract period). This has only an effect for cost definitions
+#'               with duration "CommissionPeriod". Default is 5 years.}
 #' }
 #'
 #'
@@ -443,6 +485,17 @@ InsuranceContract.Values = list(
 #'               immediately for balance-sheet purposes. In particular, the
 #'               balance sheet reserve at time $t=0$ is not 0, but the
 #'               premium paid. In turn, no unearned premiums are applied.}
+#'     \item{\code{$surrenderIncludesCostsReserves}}{Whether (administration)
+#'               cost reserves are paid out on surrender (i.e. included in the
+#'               surrender value before surrender penalties are applied)}
+#'     \item{\code{$unitcostsInGross}}{Whether unit costs are included in the
+#'               gross premium calculation or added after gross premiums. (default: FALSE)}
+#'     \item{\code{$absPremiumRefund}}{Constant death benefit (typically premium
+#'               refund of a previous contract), relative to the sum insured.}
+#'     \item{\code{$alphaCostsCommission}}{Whether alpha costs over the commision
+#'               period are given as their actual yearly value ("actual"), or
+#'               whether the given value is the sum ("sum") or the present value
+#'               ("presentvalue") over the whole commission period.}
 #' }
 #'
 #' ## Elements of sublist \code{InsuranceContract.ParameterDefault$ProfitParticipation}
@@ -484,7 +537,13 @@ InsuranceContract.Values = list(
 #' \describe{
 #'     \item{\code{$adjustCashFlows}}{Function with signature \code{function(x, params, values, ...)} to adjust the benefit/premium cash flows after their setup.}
 #'     \item{\code{$adjustCashFlowsCosts}}{Function with signature \code{function(x, params, values, ...)} to adjust the costs cash flows after their setup.}
+#'     \item{\code{$adjustCosts}}{Function with signature \code{function(costs, params, values, ...)} to adjust the tariff costs after their setup (e.g. contract-specific conditions/waivers, etc.).}
+#'     \item{\code{$adjustMinCosts}}{Function with signature \code{function(minCosts, costs, params, values, ...)} to adjust the tariff minimum (unwaivable) costs after their setup (e.g. contract-specific conditions/waivers, etc.).}
+#'     \item{\code{$adjustPresentValues}}{Adjust the present value vectors that are later used to derive premiums and reserves. \code{function(presentValues, params, values)}}
+#'     \item{\code{$adjustPresentValuesCosts}}{Adjust the present value cost vectors used to derive premiums and reserves. \code{function(presentValuesCosts, params, values)}}
 #'     \item{\code{$adjustPremiumCoefficients}}{Function with signature \code{function(coeff, type, premiums, params, values, premiumCalculationTime)} to adjust the coefficients for premium calculation after their default setup. Use cases are e.g. term-fix tariffs where the Zillmer premium term contains the administration cost over the whole contract, but not other gamma- or beta-costs.}
+#'     \item{\code{$adjustPVForReserves}}{Adjust the absolute present value vectors used to derive reserves (e.g. when a sum rebate is subtracted from the gamma-cost reserves without influencing the premium calculation). \code{function(absPV, params, values)}}
+#'     \item{\code{$premiumRebateCalculation}}{Calculate the actual premium rebate from the rebate rate (e.g. when the premium rate is given as a yearly cost reduction applied to a single-premium contract). \code{function(premiumRebateRate, params = params, values = values)}}
 #' }
 #'
 #'
@@ -495,6 +554,7 @@ InsuranceContract.ParameterDefaults = list(
     ContractData = list(
         id = "Hauptvertrag",
         sumInsured = 100000,
+        birthDate = NULL,
         YOB = NULL,
         age = NULL,
         technicalAge = NULL,
@@ -514,14 +574,14 @@ InsuranceContract.ParameterDefaults = list(
         premiumFrequency = 1,                   # number of premium payments per year
         benefitFrequency = 1,                   # number of benefit payments per year (for annuities) or death benefit at the end of every 1/k-th year
 
-        widowProportion = 0,                    # widow transition factor (on sum insured)
-        deathBenefitProportion = 1,             # For endowments: Proportion of the death benefit relative to the life benefit
         premiumRefund = 0,                      # Proportion of premiums refunded on death (including additional risk, e.g. 1.10 = 110% of paid premiums)
         premiumIncrease = 1,                    # The yearly growth factor of the premium, i.e. 1.05 means +5% increase each year; a Vector describes the premiums for all years
         annuityIncrease = 1,                    # The yearly growth factor of the annuity payments, i.e. 1.05 means +5% incrase each year; a vector describes the annuity unit payments for all years
-        deathBenefit = 1,                        # The yearly relative death benefit (relative to the initial sum insured); Can be set to a function(len, params, values), e.g. deathBenefit = deathBenefit.linearDecreasing
+        deathBenefit = 1,                       # The yearly relative death benefit (relative to the initial sum insured); Can be fixed, e.g. 0.5 for 50% death cover, or  set to a function(len, params, values) like deathBenefit = deathBenefit.linearDecreasing
+        benefitParameter = NULL,                # Tariff-Specific additional parameter to define custom benefits (e.g. a minimum death benefit quota, an initial )
 
-        costWaiver = 0                          # The cost waiver (up to minCosts, 0=no cost waiver, 1=full cost waiver down to minCosts)
+        costWaiver = 0,                         # The cost waiver (up to minCosts, 0=no cost waiver, 1=full cost waiver down to minCosts)
+        attributes = list()                     # List of additional attributes with custom meaning (not standardized, but can be used by any tariff to implement custom behavior for certain contracts or slices)
     ),
     ContractState = list(
         premiumWaiver = FALSE,                  # contract is paid-up
@@ -539,8 +599,8 @@ InsuranceContract.ParameterDefaults = list(
         surrenderValueCalculation = NULL,       # By default no surrender penalties
         premiumWaiverValueCalculation = NULL,   # By default, surrender value will be used
 
-        premiumFrequencyOrder = 0,              # Order of the approximation for payments within the year (unless an extra frequency loading is used => then leave this at 0)
-        benefitFrequencyOrder = 0
+        premiumFrequencyOrder = function(params, ...) { if (is.null(params$Loadings$premiumFrequencyLoading)) 0 else -1}, # Order of the approximation for payments within the year (unless an extra frequency loading is used => then leave this at 0)
+        benefitFrequencyOrder = function(params, ...) { if (is.null(params$Loadings$benefitFrequencyLoading)) 0 else -1}
     ),
     Costs = initializeCosts(),
     minCosts = NULL,               # Base costs, which cannot be waived
@@ -556,14 +616,19 @@ InsuranceContract.ParameterDefaults = list(
         premiumRebate = 0,                      # gross premium reduction for large premiums, % of gross premium # TODO
         partnerRebate = 0,                      # Partner rabate on premium (including loading and other rebates) if more than one similar contract is concluded
         extraChargeGrossPremium = 0,            # extra charges on gross premium (smoker, leisure activities, BMI too high, etc.)
-        benefitFrequencyLoading = list("1" = 0.0, "2" = 0.0, "4" = 0.0, "12" = 0.0), # TODO: Properly implement this as a function
-        premiumFrequencyLoading = list("1" = 0.0, "2" = 0.0, "4" = 0.0, "12" = 0.0), # TODO: Properly implement this as a function
-        alphaRefundPeriod = 5                   # How long acquisition costs should be refunded in case of surrender
+        benefitFrequencyLoading = NULL, # TODO: Properly implement this as a function
+        premiumFrequencyLoading = NULL, # TODO: Properly implement this as a function
+        alphaRefundPeriod = 5,                   # How long acquisition costs should be refunded in case of surrender
+        commissionPeriod = 5
     ),
     Features = list(                            # Special cases for the calculations
         betaGammaInZillmer = FALSE,             # Whether beta and gamma-costs should be included in the Zillmer premium calculation
         alphaRefundLinear  = TRUE,              # Whether the refund of alpha-costs on surrender is linear in t or follows the NPV of an annuity
-        useUnearnedPremiums = isRegularPremiumContract # Whether unearned premiums should be calculated in the balance sheet reserves. Otherwise, a premium paid at the beginning of the period is added to the reserve for balance-sheet purposes.
+        useUnearnedPremiums = isRegularPremiumContract, # Whether unearned premiums should be calculated in the balance sheet reserves. Otherwise, a premium paid at the beginning of the period is added to the reserve for balance-sheet purposes.
+        surrenderIncludesCostsReserves = TRUE,  # Whether (administration) cost reserves are paid out on surrender (i.e. included in the surrender value before surrender penalties are applied)
+        unitcostsInGross = FALSE,
+        absPremiumRefund = 0,                   # Constant death benefit (irrespective of the type of contract), typically a premium refund for a previous contract
+        alphaCostsCommission = "actual"         # Whether alpha costs over the commision period are given as their actual yearly value ("actual"), or whether the given value is the sum ("sum") or the present value ("presentvalue") over the whole commission period
     ),
 
     ProfitParticipation = list(
@@ -593,7 +658,13 @@ InsuranceContract.ParameterDefaults = list(
       # Functions with signature function(x, params, values, ...), default NULL is equivalent to function(x, ...) {x}
       adjustCashFlows = NULL,
       adjustCashFlowsCosts = NULL,
-      adjustPremiumCoefficients = NULL # function(coeff, type = type, premiums = premiums, params = params, values = values, premiumCalculationTime = premiumCalculationTime)
+      adjustCosts = NULL,
+      adjustMinCosts = NULL,
+      adjustPresentValues = NULL,        # function(presentValues, params, values)
+      adjustPresentValuesCosts = NULL,        # function(presentValuesCosts, params, values)
+      adjustPremiumCoefficients = NULL,  # function(coeff, type = type, premiums = premiums, params = params, values = values, premiumCalculationTime = premiumCalculationTime)
+      adjustPVForReserves = NULL,        # function(absPresentValues, params, values)
+      premiumRebateCalculation = NULL   # function(premiumRebateRate, params = params, values = values)
     )
 );
 
@@ -611,7 +682,7 @@ InsuranceContract.ParameterStructure$Loadings["benefitFrequencyLoading"] = list(
 InsuranceContract.ParameterStructure$Loadings["premiumFrequencyLoading"] = list(NULL)
 
 
-#' InsuranceContract.ParametersFill
+#' Initialize the insurance contract parameters from passed arguments
 #'
 #' Initialize the insurance contract parameters from the passed
 #' arguments. Arguments not given are left unchanged. If no existing parameter
@@ -640,7 +711,7 @@ InsuranceContract.ParametersFill = function(params = InsuranceContract.Parameter
     params
 }
 
-#' InsuranceContract.ParametersFallback
+#' Use fallback values for missing contract parameters
 #'
 #' Provide default values for the insurance contract parameters if any of the
 #' parameters is not explicitly set.

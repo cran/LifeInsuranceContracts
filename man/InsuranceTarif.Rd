@@ -136,41 +136,42 @@ all fields.}
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-new}{\code{InsuranceTarif$new()}}
-\item \href{#method-createModification}{\code{InsuranceTarif$createModification()}}
-\item \href{#method-getParameters}{\code{InsuranceTarif$getParameters()}}
-\item \href{#method-getInternalValues}{\code{InsuranceTarif$getInternalValues()}}
-\item \href{#method-getAges}{\code{InsuranceTarif$getAges()}}
-\item \href{#method-getTransitionProbabilities}{\code{InsuranceTarif$getTransitionProbabilities()}}
-\item \href{#method-getCostValues}{\code{InsuranceTarif$getCostValues()}}
-\item \href{#method-getPremiumCF}{\code{InsuranceTarif$getPremiumCF()}}
-\item \href{#method-getAnnuityCF}{\code{InsuranceTarif$getAnnuityCF()}}
-\item \href{#method-getDeathCF}{\code{InsuranceTarif$getDeathCF()}}
-\item \href{#method-getBasicCashFlows}{\code{InsuranceTarif$getBasicCashFlows()}}
-\item \href{#method-getCashFlows}{\code{InsuranceTarif$getCashFlows()}}
-\item \href{#method-getCashFlowsCosts}{\code{InsuranceTarif$getCashFlowsCosts()}}
-\item \href{#method-presentValueCashFlows}{\code{InsuranceTarif$presentValueCashFlows()}}
-\item \href{#method-presentValueCashFlowsCosts}{\code{InsuranceTarif$presentValueCashFlowsCosts()}}
-\item \href{#method-getAbsCashFlows}{\code{InsuranceTarif$getAbsCashFlows()}}
-\item \href{#method-getAbsPresentValues}{\code{InsuranceTarif$getAbsPresentValues()}}
-\item \href{#method-presentValueBenefits}{\code{InsuranceTarif$presentValueBenefits()}}
-\item \href{#method-getPremiumCoefficients}{\code{InsuranceTarif$getPremiumCoefficients()}}
-\item \href{#method-premiumCalculation}{\code{InsuranceTarif$premiumCalculation()}}
-\item \href{#method-reserveCalculation}{\code{InsuranceTarif$reserveCalculation()}}
-\item \href{#method-getBalanceSheetReserveFactor}{\code{InsuranceTarif$getBalanceSheetReserveFactor()}}
-\item \href{#method-reserveCalculationBalanceSheet}{\code{InsuranceTarif$reserveCalculationBalanceSheet()}}
-\item \href{#method-calculateProfitParticipation}{\code{InsuranceTarif$calculateProfitParticipation()}}
-\item \href{#method-reservesAfterProfit}{\code{InsuranceTarif$reservesAfterProfit()}}
-\item \href{#method-getBasicDataTimeseries}{\code{InsuranceTarif$getBasicDataTimeseries()}}
-\item \href{#method-premiumDecomposition}{\code{InsuranceTarif$premiumDecomposition()}}
-\item \href{#method-calculateFutureSums}{\code{InsuranceTarif$calculateFutureSums()}}
-\item \href{#method-calculatePresentValues}{\code{InsuranceTarif$calculatePresentValues()}}
-\item \href{#method-clone}{\code{InsuranceTarif$clone()}}
+\item \href{#method-InsuranceTarif-new}{\code{InsuranceTarif$new()}}
+\item \href{#method-InsuranceTarif-createModification}{\code{InsuranceTarif$createModification()}}
+\item \href{#method-InsuranceTarif-getParameters}{\code{InsuranceTarif$getParameters()}}
+\item \href{#method-InsuranceTarif-getInternalValues}{\code{InsuranceTarif$getInternalValues()}}
+\item \href{#method-InsuranceTarif-getAges}{\code{InsuranceTarif$getAges()}}
+\item \href{#method-InsuranceTarif-getTransitionProbabilities}{\code{InsuranceTarif$getTransitionProbabilities()}}
+\item \href{#method-InsuranceTarif-getCostValues}{\code{InsuranceTarif$getCostValues()}}
+\item \href{#method-InsuranceTarif-getPremiumCF}{\code{InsuranceTarif$getPremiumCF()}}
+\item \href{#method-InsuranceTarif-getAnnuityCF}{\code{InsuranceTarif$getAnnuityCF()}}
+\item \href{#method-InsuranceTarif-getDeathCF}{\code{InsuranceTarif$getDeathCF()}}
+\item \href{#method-InsuranceTarif-getBasicCashFlows}{\code{InsuranceTarif$getBasicCashFlows()}}
+\item \href{#method-InsuranceTarif-getCashFlows}{\code{InsuranceTarif$getCashFlows()}}
+\item \href{#method-InsuranceTarif-getCashFlowsCosts}{\code{InsuranceTarif$getCashFlowsCosts()}}
+\item \href{#method-InsuranceTarif-presentValueCashFlows}{\code{InsuranceTarif$presentValueCashFlows()}}
+\item \href{#method-InsuranceTarif-presentValueCashFlowsCosts}{\code{InsuranceTarif$presentValueCashFlowsCosts()}}
+\item \href{#method-InsuranceTarif-getAbsCashFlows}{\code{InsuranceTarif$getAbsCashFlows()}}
+\item \href{#method-InsuranceTarif-getAbsPresentValues}{\code{InsuranceTarif$getAbsPresentValues()}}
+\item \href{#method-InsuranceTarif-presentValueBenefits}{\code{InsuranceTarif$presentValueBenefits()}}
+\item \href{#method-InsuranceTarif-getPremiumCoefficients}{\code{InsuranceTarif$getPremiumCoefficients()}}
+\item \href{#method-InsuranceTarif-premiumCalculation}{\code{InsuranceTarif$premiumCalculation()}}
+\item \href{#method-InsuranceTarif-reserveCalculation}{\code{InsuranceTarif$reserveCalculation()}}
+\item \href{#method-InsuranceTarif-getBalanceSheetReserveFactor}{\code{InsuranceTarif$getBalanceSheetReserveFactor()}}
+\item \href{#method-InsuranceTarif-reserveCalculationBalanceSheet}{\code{InsuranceTarif$reserveCalculationBalanceSheet()}}
+\item \href{#method-InsuranceTarif-calculateProfitParticipation}{\code{InsuranceTarif$calculateProfitParticipation()}}
+\item \href{#method-InsuranceTarif-reservesAfterProfit}{\code{InsuranceTarif$reservesAfterProfit()}}
+\item \href{#method-InsuranceTarif-getBasicDataTimeseries}{\code{InsuranceTarif$getBasicDataTimeseries()}}
+\item \href{#method-InsuranceTarif-premiumDecomposition}{\code{InsuranceTarif$premiumDecomposition()}}
+\item \href{#method-InsuranceTarif-calculateFutureSums}{\code{InsuranceTarif$calculateFutureSums()}}
+\item \href{#method-InsuranceTarif-calculatePresentValues}{\code{InsuranceTarif$calculatePresentValues()}}
+\item \href{#method-InsuranceTarif-evaluateFrequencyLoading}{\code{InsuranceTarif$evaluateFrequencyLoading()}}
+\item \href{#method-InsuranceTarif-clone}{\code{InsuranceTarif$clone()}}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-new"></a>}}
-\if{latex}{\out{\hypertarget{method-new}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-new"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-new}{}}}
 \subsection{Method \code{new()}}{
 Initialize a new tariff object
 \subsection{Usage}{
@@ -242,8 +243,8 @@ tarif.male = InsuranceTarif$new(name = "Annuity Males", type = "annuity",
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-createModification"></a>}}
-\if{latex}{\out{\hypertarget{method-createModification}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-createModification"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-createModification}{}}}
 \subsection{Method \code{createModification()}}{
 create a copy of a tariff with certain parameters changed
 \subsection{Usage}{
@@ -299,8 +300,8 @@ tarif.unisex = tarif.male$createModification(name = "Annuity unisex",
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getParameters"></a>}}
-\if{latex}{\out{\hypertarget{method-getParameters}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-getParameters"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-getParameters}{}}}
 \subsection{Method \code{getParameters()}}{
 Retrieve the parameters for this tariff (can be overridden
 for each contract)
@@ -320,8 +321,8 @@ tarif.male$getParameters()
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getInternalValues"></a>}}
-\if{latex}{\out{\hypertarget{method-getInternalValues}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-getInternalValues"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-getInternalValues}{}}}
 \subsection{Method \code{getInternalValues()}}{
 Get some internal parameters cached (length of data.frames,
 policy periods cut at max.age, etc.)
@@ -348,8 +349,8 @@ relevant for the contract-specific calculations
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getAges"></a>}}
-\if{latex}{\out{\hypertarget{method-getAges}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-getAges"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-getAges}{}}}
 \subsection{Method \code{getAges()}}{
 Calculate the contract-relevant age(s) given a certain
 parameter data structure (contract-specific values)
@@ -374,8 +375,8 @@ whole contract period
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getTransitionProbabilities"></a>}}
-\if{latex}{\out{\hypertarget{method-getTransitionProbabilities}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-getTransitionProbabilities"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-getTransitionProbabilities}{}}}
 \subsection{Method \code{getTransitionProbabilities()}}{
 Calculate the transition probabilities from the contract-specific
 parameters passed as \code{params} and the already-calculated contract
@@ -402,8 +403,8 @@ Not to be called directly, but implicitly by the \link{InsuranceContract} object
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getCostValues"></a>}}
-\if{latex}{\out{\hypertarget{method-getCostValues}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-getCostValues"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-getCostValues}{}}}
 \subsection{Method \code{getCostValues()}}{
 Obtain the cost structure from the cost parameter and the
 given paremeter set
@@ -428,8 +429,8 @@ latter function is actually evaluated.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getPremiumCF"></a>}}
-\if{latex}{\out{\hypertarget{method-getPremiumCF}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-getPremiumCF"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-getPremiumCF}{}}}
 \subsection{Method \code{getPremiumCF()}}{
 Returns the unit premium cash flow for the whole contract period.
 \itemize{
@@ -462,8 +463,8 @@ Not to be called directly, but implicitly by the \link{InsuranceContract} object
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getAnnuityCF"></a>}}
-\if{latex}{\out{\hypertarget{method-getAnnuityCF}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-getAnnuityCF"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-getAnnuityCF}{}}}
 \subsection{Method \code{getAnnuityCF()}}{
 Returns the unit annuity cash flow (guaranteed and contingent) for
 the whole annuity payment period (after potential deferral period)
@@ -496,8 +497,8 @@ Not to be called directly, but implicitly by the \link{InsuranceContract} object
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getDeathCF"></a>}}
-\if{latex}{\out{\hypertarget{method-getDeathCF}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-getDeathCF"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-getDeathCF}{}}}
 \subsection{Method \code{getDeathCF()}}{
 Returns the unit death cash flow for the whole protection
 period (after potential deferral period!)
@@ -529,8 +530,8 @@ Not to be called directly, but implicitly by the \link{InsuranceContract} object
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getBasicCashFlows"></a>}}
-\if{latex}{\out{\hypertarget{method-getBasicCashFlows}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-getBasicCashFlows"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-getBasicCashFlows}{}}}
 \subsection{Method \code{getBasicCashFlows()}}{
 Returns the basic (unit) cash flows associated with the type
 of insurance given in the InsuranceTarif's \code{tariffType} field
@@ -556,8 +557,8 @@ Not to be called directly, but implicitly by the \link{InsuranceContract} object
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getCashFlows"></a>}}
-\if{latex}{\out{\hypertarget{method-getCashFlows}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-getCashFlows"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-getCashFlows}{}}}
 \subsection{Method \code{getCashFlows()}}{
 Returns the cash flows for the contract given the parameters
 \subsection{Usage}{
@@ -582,8 +583,8 @@ Not to be called directly, but implicitly by the \link{InsuranceContract} object
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getCashFlowsCosts"></a>}}
-\if{latex}{\out{\hypertarget{method-getCashFlowsCosts}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-getCashFlowsCosts"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-getCashFlowsCosts}{}}}
 \subsection{Method \code{getCashFlowsCosts()}}{
 Returns the cost cash flows of the contract given the contract
 and tariff parameters
@@ -609,26 +610,26 @@ Not to be called directly, but implicitly by the \link{InsuranceContract} object
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-presentValueCashFlows"></a>}}
-\if{latex}{\out{\hypertarget{method-presentValueCashFlows}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-presentValueCashFlows"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-presentValueCashFlows}{}}}
 \subsection{Method \code{presentValueCashFlows()}}{
 Returns the present values of the cash flows of the contract
 (cash flows already calculated and stored in the \code{cashFlows} data.frame)
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{InsuranceTarif$presentValueCashFlows(cashFlows, params, values)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{InsuranceTarif$presentValueCashFlows(params, values)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{cashFlows}}{data.frame of cash flows calculated by a call to \href{#method-getCashFlows}{\code{InsuranceTarif$getCashFlows()}}}
-
 \item{\code{params}}{Contract-specific, full set of parameters of the contract
 (merged parameters of the defaults, the tariff, the profit participation
 scheme and the contract)}
 
 \item{\code{values}}{Contract values calculated so far (in the \code{contract$Values}
 list) then this method is called by the contract object}
+
+\item{\code{cashFlows}}{data.frame of cash flows calculated by a call to \href{#method-getCashFlows}{\code{InsuranceTarif$getCashFlows()}}}
 }
 \if{html}{\out{</div>}}
 }
@@ -638,14 +639,14 @@ Not to be called directly, but implicitly by the \link{InsuranceContract} object
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-presentValueCashFlowsCosts"></a>}}
-\if{latex}{\out{\hypertarget{method-presentValueCashFlowsCosts}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-presentValueCashFlowsCosts"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-presentValueCashFlowsCosts}{}}}
 \subsection{Method \code{presentValueCashFlowsCosts()}}{
 Calculates the present values of the cost cash flows of the
 contract (cost cash flows alreay calculated by \href{#method-getCashFlowsCosts}{\code{InsuranceTarif$getCashFlowsCosts()}}
 and stored in the \code{values} list
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{InsuranceTarif$presentValueCashFlowsCosts(params, values)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{InsuranceTarif$presentValueCashFlowsCosts(params, values, presentValues)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -657,6 +658,8 @@ scheme and the contract)}
 
 \item{\code{values}}{Contract values calculated so far (in the \code{contract$Values}
 list) then this method is called by the contract object}
+
+\item{\code{presentValues}}{The present values of the insurance claims (without costs)}
 }
 \if{html}{\out{</div>}}
 }
@@ -666,8 +669,8 @@ Not to be called directly, but implicitly by the \link{InsuranceContract} object
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getAbsCashFlows"></a>}}
-\if{latex}{\out{\hypertarget{method-getAbsCashFlows}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-getAbsCashFlows"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-getAbsCashFlows}{}}}
 \subsection{Method \code{getAbsCashFlows()}}{
 Calculate the cash flows in monetary terms of the insurance contract
 \subsection{Usage}{
@@ -697,8 +700,8 @@ This method is NOT to be called directly, but implicitly by the \link{InsuranceC
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getAbsPresentValues"></a>}}
-\if{latex}{\out{\hypertarget{method-getAbsPresentValues}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-getAbsPresentValues"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-getAbsPresentValues}{}}}
 \subsection{Method \code{getAbsPresentValues()}}{
 Calculate the absolute present value time series of the insurance contract
 \subsection{Usage}{
@@ -729,8 +732,8 @@ This method is NOT to be called directly, but implicitly by the \link{InsuranceC
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-presentValueBenefits"></a>}}
-\if{latex}{\out{\hypertarget{method-presentValueBenefits}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-presentValueBenefits"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-presentValueBenefits}{}}}
 \subsection{Method \code{presentValueBenefits()}}{
 Calculate the absolute present value time series of the
 benefits of the insurance contract
@@ -762,8 +765,8 @@ This method is NOT to be called directly, but implicitly by the \link{InsuranceC
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getPremiumCoefficients"></a>}}
-\if{latex}{\out{\hypertarget{method-getPremiumCoefficients}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-getPremiumCoefficients"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-getPremiumCoefficients}{}}}
 \subsection{Method \code{getPremiumCoefficients()}}{
 Calculate the linear coefficients of the premium calculation formula for the insurance contract
 \subsection{Usage}{
@@ -820,8 +823,8 @@ argument.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-premiumCalculation"></a>}}
-\if{latex}{\out{\hypertarget{method-premiumCalculation}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-premiumCalculation"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-premiumCalculation}{}}}
 \subsection{Method \code{premiumCalculation()}}{
 Calculate the premiums of the InsuranceContract given the
 parameters, present values and premium cofficients already calculated and
@@ -858,8 +861,8 @@ Not to be called directly, but implicitly by the \link{InsuranceContract} object
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-reserveCalculation"></a>}}
-\if{latex}{\out{\hypertarget{method-reserveCalculation}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-reserveCalculation"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-reserveCalculation}{}}}
 \subsection{Method \code{reserveCalculation()}}{
 Calculate the reserves of the InsuranceContract given the
 parameters, present values and premiums already calculated and stored in
@@ -886,8 +889,8 @@ Not to be called directly, but implicitly by the \link{InsuranceContract} object
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getBalanceSheetReserveFactor"></a>}}
-\if{latex}{\out{\hypertarget{method-getBalanceSheetReserveFactor}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-getBalanceSheetReserveFactor"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-getBalanceSheetReserveFactor}{}}}
 \subsection{Method \code{getBalanceSheetReserveFactor()}}{
 Calculate the (linear) interpolation factors for the balance
 sheet reserve (Dec. 31) between the yearly contract closing dates
@@ -915,8 +918,8 @@ Not to be called directly, but implicitly by the \link{InsuranceContract} object
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-reserveCalculationBalanceSheet"></a>}}
-\if{latex}{\out{\hypertarget{method-reserveCalculationBalanceSheet}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-reserveCalculationBalanceSheet"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-reserveCalculationBalanceSheet}{}}}
 \subsection{Method \code{reserveCalculationBalanceSheet()}}{
 Calculate the reserves for the balance sheets at Dec. 31 of each
 year by interpolation from the contract values calculated for
@@ -943,8 +946,8 @@ Not to be called directly, but implicitly by the \link{InsuranceContract} object
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-calculateProfitParticipation"></a>}}
-\if{latex}{\out{\hypertarget{method-calculateProfitParticipation}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-calculateProfitParticipation"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-calculateProfitParticipation}{}}}
 \subsection{Method \code{calculateProfitParticipation()}}{
 Calculate the profit participation given the contract
 parameters and the already calculated reserves of the contract.
@@ -970,8 +973,8 @@ Not to be called directly, but implicitly by the \link{InsuranceContract} object
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-reservesAfterProfit"></a>}}
-\if{latex}{\out{\hypertarget{method-reservesAfterProfit}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-reservesAfterProfit"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-reservesAfterProfit}{}}}
 \subsection{Method \code{reservesAfterProfit()}}{
 Calculate the reserves after profit participation for the given profit scenario
 \subsection{Usage}{
@@ -1000,8 +1003,8 @@ Not to be called directly, but implicitly by the \link{InsuranceContract} object
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getBasicDataTimeseries"></a>}}
-\if{latex}{\out{\hypertarget{method-getBasicDataTimeseries}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-getBasicDataTimeseries"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-getBasicDataTimeseries}{}}}
 \subsection{Method \code{getBasicDataTimeseries()}}{
 Return the time series of the basic contract
 \subsection{Usage}{
@@ -1026,8 +1029,8 @@ Not to be called directly, but implicitly by the \link{InsuranceContract} object
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-premiumDecomposition"></a>}}
-\if{latex}{\out{\hypertarget{method-premiumDecomposition}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-premiumDecomposition"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-premiumDecomposition}{}}}
 \subsection{Method \code{premiumDecomposition()}}{
 Calculate the time series of the premium decomposition of the contract
 \subsection{Usage}{
@@ -1053,8 +1056,8 @@ All premiums, reserves and present values have already been calculated.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-calculateFutureSums"></a>}}
-\if{latex}{\out{\hypertarget{method-calculateFutureSums}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-calculateFutureSums"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-calculateFutureSums}{}}}
 \subsection{Method \code{calculateFutureSums()}}{
 Generic function to calculate future sums of the values
 \subsection{Usage}{
@@ -1072,8 +1075,8 @@ Generic function to calculate future sums of the values
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-calculatePresentValues"></a>}}
-\if{latex}{\out{\hypertarget{method-calculatePresentValues}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-calculatePresentValues"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-calculatePresentValues}{}}}
 \subsection{Method \code{calculatePresentValues()}}{
 Calculate all present values for a given time series. The
 mortalities are taken from the contract's parameters.
@@ -1097,8 +1100,37 @@ scheme and the contract)}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-clone}{}}}
+\if{html}{\out{<a id="method-InsuranceTarif-evaluateFrequencyLoading"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-evaluateFrequencyLoading}{}}}
+\subsection{Method \code{evaluateFrequencyLoading()}}{
+Calculate the premium frequency loading, i.e. the surcharge
+on the premium for those cases where the premium is not paid yearly.
+Return values can be either a numeric value or a named list with all
+possible premium frequencies as keys.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{InsuranceTarif$evaluateFrequencyLoading(loading, frequency, params, values)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{loading}}{The premiumFrequencyLoading parameter of the Contract or Tariff to be evaluated}
+
+\item{\code{frequency}}{The premiumFrequency parameter of the contract}
+
+\item{\code{params}}{Contract-specific, full set of parameters of the contract
+(merged parameters of the defaults, the tariff, the profit participation
+scheme and the contract)}
+
+\item{\code{values}}{Contract values calculated so far (in the \code{contract$Values}
+list) then this method is called by the contract object}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-InsuranceTarif-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-InsuranceTarif-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

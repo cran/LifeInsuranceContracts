@@ -1,7 +1,7 @@
 Package: LifeInsuranceContracts
 Type: Package
-Version: 0.0.3
-Date: 2021-08-24
+Version: 0.0.4
+Date: 2022-09-10
 Title: Framework for Traditional Life Insurance Contracts
 Description: R6 classes to model traditional life insurance
     contracts like annuities, whole life insurances or endowments. Such life
@@ -19,21 +19,21 @@ Author: Reinhold Kainhofer [aut, cre]
 Maintainer: Reinhold Kainhofer <reinhold@kainhofer.com>
 Encoding: UTF-8
 Imports: R6, MortalityTables, objectProperties, lubridate, openxlsx,
-        dplyr, scales, abind, stringr, methods, rlang, kableExtra,
-        pander, tidyr
+        dplyr, scales, abind, stringr, methods, rlang, rmarkdown,
+        kableExtra, pander, tidyr
 License: GPL (>= 2)
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.1
 Collate: 'HelperFunctions.R' 'InsuranceParameters.R'
         'ProfitParticipation_Functions.R' 'ProfitParticipation.R'
         'InsuranceTarif.R' 'InsuranceContract.R'
         'addDataTableWorksheet.R' 'contractGrid.R'
         'exportInsuranceContract_xlsx.R' 'showVmGlgExamples.R'
         'exportInsuranceContractExample.R'
-Suggests: knitr, rmarkdown, magrittr, tibble, testthat
+Suggests: knitr, magrittr, tibble, testthat
 VignetteBuilder: knitr
 URL: https://gitlab.open-tools.net/R/r-life-insurance-contracts
 BugReports: https://gitlab.open-tools.net/R/r-life-insurance-contracts/-/issues
 NeedsCompilation: no
-Packaged: 2021-09-01 08:27:19 UTC; reinhold
+Packaged: 2022-09-11 10:50:15 UTC; reinhold
 Repository: CRAN
-Date/Publication: 2021-09-01 21:50:09 UTC
+Date/Publication: 2022-09-11 12:02:54 UTC

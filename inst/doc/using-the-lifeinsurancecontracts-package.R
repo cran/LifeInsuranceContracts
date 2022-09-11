@@ -5,6 +5,7 @@ library(kableExtra)
 library(LifeInsuranceContracts)
 library(dplyr)
 library(tibble)
+library(lubridate)
 options(scipen=5)
 
 library(pander)
@@ -752,7 +753,7 @@ ProfitScheme.example = ProfitParticipation$new(
 contract.Endow.PP = InsuranceContract$new(
   tarif = Tarif.Endowment,
   sumInsured = 10000,
-  deathBenefitProportion = 5,
+  deathBenefit = 5,
   age = 50, policyPeriod = 15,
   
   profitParticipationScheme = ProfitScheme.example,

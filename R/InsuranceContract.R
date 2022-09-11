@@ -2,6 +2,11 @@
 #'
 #' @import MortalityTables
 #' @import R6
+#' @import lubridate
+#  Prevent spurious imports warnings in CRAN checks:
+#' @importFrom kableExtra kable
+#' @importFrom pander pander
+#' @importFrom rmarkdown render
 NULL
 
 
@@ -266,6 +271,9 @@ InsuranceContract = R6Class(
         #'        [InsuranceContract.ParameterDefaults] data structure.
         #'
         initialize = function(tarif, parent = NULL, calculate = "all", profitid = "default", ...) {
+            if (getOption('LIC.debug.init', FALSE)) {
+                browser();
+            }
             private$initParams = c(list(tarif = tarif, parent = parent, calculate = calculate, profitid = profitid), list(...))
             self$tarif = tarif;
             self$parent = parent;
@@ -373,7 +381,10 @@ InsuranceContract = R6Class(
         #'
         #' @examples
         #' # TODO
-        addBlock = function(id = NULL, block = NULL, t = block$Values$int$blockStart, comment = comment, ...) {
+        addBlock = function(id = NULL, block = NULL, t = block$Values$int$blockStart, comment = paste0("Additional block at time t=", t), ...) {
+            if (getOption('LIC.debug.addBlock', FALSE)) {
+                browser();
+            }
             if (missing(block) || is.null(block) || !is(block, "InsuranceContract")) {
                 # Create a block with the same tariff and parameters as the main contract, but allow overriding params with the ... arguments
                 block = InsuranceContract$new(id = id, ...)
@@ -446,6 +457,9 @@ InsuranceContract = R6Class(
         #' @examples
         #' # TODO
         addDynamics = function(t, NewSumInsured, SumInsuredDelta, id, ...) {
+            if (getOption('LIC.debug.addDynamics', FALSE)) {
+                browser();
+            }
 
             # TODO: Override only the required parameters
             params = private$initParams
@@ -530,12 +544,27 @@ InsuranceContract = R6Class(
         #' @param history_type The type (free-form string) to record in the history snapshot
         #'
         calculateContract = function(calculate = "all", valuesFrom = 0, premiumCalculationTime = 0, preservePastPV = TRUE, additionalCapital = 0, recalculatePremiums = TRUE, recalculatePremiumSum = TRUE, history_comment = NULL, history_type = "Contract") {
+            if (getOption('LIC.debug.calculateContract', FALSE)) {
+                browser();
+            }
             if (!is.null(self$blocks)) {
                 for (b in self$blocks) {
-                    .args = as.list(match.call()[-1])
-                    # correctly shift the valuesFrom by each block's blockStart parameter
-                    .args$valuesFrom = max(0, .args$valuesFrom - b$Parameters$ContractData$blockStart)
-                    do.call(b$calculateContract, .args)
+                    #
+                    # .args = as.list(match.call()[-1])
+                    # # correctly shift the valuesFrom by each block's blockStart parameter
+                    # .args$valuesFrom = max(0, .args$valuesFrom - b$Parameters$ContractData$blockStart)
+                    # do.call(b$calculateContract, .args)
+                    #
+                    b$calculateContract(
+                        calculate = calculate,
+                        valuesFrom = max(0, valuesFrom - b$Parameters$ContractData$blockStart),
+                        premiumCalculationTime = max(0, premiumCalculationTime - b$Parameters$ContractData$blockStart),
+                        preservePastPV = preservePastPV,
+                        additionalCapital = additionalCapital,
+                        recalculatePremiums = recalculatePremiums,
+                        recalculatePremiumSum = recalculatePremiumSum,
+                        history_comment = history_comment,
+                        history_type = history_type)
                 }
             }
             self$Values$int = private$determineInternalValues()
@@ -571,7 +600,7 @@ InsuranceContract = R6Class(
 
             # Shall we re-calculate PV or preserve the old ones???
             pv = private$calculatePresentValues()
-            pvCost = private$calculatePresentValuesCosts()
+            pvCost = private$calculatePresentValuesCosts(presentValues = pv)
             oldPV = self$Values$presentValues
             if (preservePastPV) {
                 # Preserve past present values, i.e. the PV represents the PV
@@ -657,6 +686,9 @@ InsuranceContract = R6Class(
         #' @param valuesFrom The time from when to aggragate values. Values before
         #'        that time will be left unchanged.
         consolidateBlocks = function(valuesFrom = 0) {
+            if (getOption('LIC.debug.consolidateBlocks', FALSE)) {
+                browser();
+            }
             # First, Re-calculate all children that have children on their own
             for (b in self$blocks) {
                 if (length(b$blocks) > 0) {
@@ -760,16 +792,26 @@ InsuranceContract = R6Class(
         #'        \code{sumInsured} is adjusted according to the existing reserves.
         #'
         #' @param t Time of the premium waiver.
+        #' @param ... Further parameters (currently unused)
         #'
         #' @examples
         #' # TODO
-        premiumWaiver = function(t) {
-            newSumInsured = self$Values$reserves[[toString(t), "PremiumFreeSumInsured"]];
+        premiumWaiver = function(t, ...) {
+            if (getOption('LIC.debug.premiumWaiver', FALSE)) {
+                browser();
+            }
+            if (length(self$blocks) > 0) {
+                for (b in self$blocks) {
+                    b$premiumWaiver(t - b$Parameters$ContractData$blockStart, ...)
+                }
+            } else {
+                newSumInsured = self$Values$reserves[[toString(t), "PremiumFreeSumInsured"]];
+                self$Parameters$ContractData$sumInsured = newSumInsured;
+            }
             self$Parameters$ContractState$premiumWaiver = TRUE;
             self$Parameters$ContractState$surrenderPenalty = FALSE; # Surrender penalty has already been applied, don't apply a second time
             self$Parameters$ContractState$alphaRefunded = TRUE;     # Alpha cost (if applicable) have already been refunded partially, don't refund again
-
-            self$Parameters$ContractData$sumInsured = newSumInsured;
+            # TODO: Extract current amount of premium refund and feed that into the calculateContract function...
 
             self$calculateContract(
                 valuesFrom = t,
@@ -799,6 +841,9 @@ InsuranceContract = R6Class(
         #' @examples
         #' # TODO
         profitScenario = function(...) {
+            if (getOption('LIC.debug.profitScenario', FALSE)) {
+                browser();
+            }
             private$calculateProfitParticipation(...)
         },
 
@@ -823,6 +868,9 @@ InsuranceContract = R6Class(
         #' @examples
         #' # TODO
         addProfitScenario = function(id, ...) {
+            if (getOption('LIC.debug.addProfitScenario', FALSE)) {
+                browser();
+            }
             .args = as.list(match.call()[-1])
             self$Parameters$ProfitParticipation$scenarios[[id]] = list(...)
             if (length(self$blocks) > 0) {
@@ -860,29 +908,62 @@ InsuranceContract = R6Class(
             args = list(...);
             # TODO-blocks
 
-            # Calculate YOB, age, contract closing etc. from each other
+            if (getOption('LIC.debug.consolidateContractData', FALSE)) {
+                browser();
+            }
+            # YOB is deprecated in favor of birthDate. If it is given, use January 1
+            if (is.null(self$Parameters$ContractData$birthDate) && !is.null(self$Parameters$ContractData$YOB)) {
+                self$Parameters$ContractData$birthDate = make_date(self$Parameters$ContractData$YOB, 1, 1)
+            }
+
+            # Calculate date/year of birth, age, contract closing etc. from each other
             # 1. Contract date (if not given) is NOW, unless age + YOB is given => Then year is derived as YOB+age
             if (is.null(self$Parameters$ContractData$contractClosing)) {
-                if (!is.null(self$Parameters$ContractData$age) && !is.null(self$Parameters$ContractData$YOB)) {
-                    # Use current day, but determine year from YOB and age
-                    self$Parameters$ContractData$contractClosing = Sys.Date() %>%
-                        'year<-'(self$Parameters$ContractData$YOB + self$Parameters$ContractData$age);
+                # Default is contractClosing is NOW:
+                self$Parameters$ContractData$contractClosing = Sys.Date()
+
+                # However, if age and DOB / YOB is given, calculate contract closing from that:
+                # age is given (and not a function that calculates age from DOB and Contract closing)
+                if (!is.null(self$Parameters$ContractData$age) &&
+                    !is.function(self$Parameters$ContractData$age)
+                ) {
+                    if (!is.null(self$Parameters$ContractData$birthDate)) {
+                        ag = self$Parameters$ContractData$age
+                        # Whole years are added as period (so the day stays the same), remaining fractions are added as dyears
+                        self$Parameters$ContractData$contractClosing = as.Date(self$Parameters$ContractData$birthDate +
+                            years(floor(self$Parameters$ContractData$age)) +
+                            dyears(self$Parameters$ContractData$age %% 1))
+                        # TODO: Always start at the nearest beginning of a month? Or leave the contract closing at any day?
+                    }
                 }
             }
 
-            # 2. Current age: If YOB is given, calculate from contract closing and YOB, otherwise assume 40
-            if (is.null(self$Parameters$ContractData$age)) {
-                if (is.null(self$Parameters$ContractData$YOB)) {
-                    self$Parameters$ContractData$age = 40; # No information to derive age => Assume 40
-                    warning("InsuranceContract: Missing age, no information to derive age from YOB and contractClosing => Assuming default age 40. Tariff: ", self$tarif$name)
+            # 2. Current age: If age is given, use it
+            if (!is.null(self$Parameters$ContractData$age)) {
+                self$Parameters$ContractData$age = valueOrFunction(
+                    self$Parameters$ContractData$age,
+                    params = self$Parameters, values = self$Values);
+            } else {
+            # 3. Otherwise, either use the birth date to calculate the age
+                if (!is.null(self$Parameters$ContractData$birthDate)) {
+                    # TODO: Decide for variant 1 or 2...
+                    # Variant 1: Exact age rounded to the nearest whole number
+                    self$Parameters$ContractData$age = age.exactRounded(self$Parameters, self$Values)
+                    # Variant 2: Year of contract closing - YOB
+                    self$Parameters$ContractData$age = age.yearDifference(self$Parameters, self$Values)
                 } else {
-                    self$Parameters$ContractData$age = year(self$Parameters$ContractData$contractClosing) -
-                        self$Parameters$ContractData$YOB;
+            # 4. Or use age=40 as default
+                    self$Parameters$ContractData$age = 40
+                    warning("InsuranceContract: Missing age, no information to derive age from YOB and contractClosing => Assuming default age 40. Tariff: ", self$tarif$name)
                 }
             }
-            if (is.null(self$Parameters$ContractData$YOB)) {
-                self$Parameters$ContractData$YOB = year(self$Parameters$ContractData$contractClosing) - self$Parameters$ContractData$age;
+            if (is.null(self$Parameters$ContractData$birthDate)) {
+                self$Parameters$ContractData$birthDate = as.Date(self$Parameters$ContractData$contractClosing -
+                    years(floor(self$Parameters$ContractData$age)) -
+                    dyears(self$Parameters$ContractData$age %% 1))
             }
+
+
 
             # Evaluate policy period, i.e. if a function is used, calculate its numeric value
             self$Parameters$ContractData$policyPeriod = valueOrFunction(
@@ -898,30 +979,47 @@ InsuranceContract = R6Class(
             self$Parameters$ContractData$premiumPeriod = valueOrFunction(
                 self$Parameters$ContractData$premiumPeriod,
                 params = self$Parameters, values = self$Values);
-            # At least 1 year premium period!
-            self$Parameters$ContractData$premiumPeriod = max(self$Parameters$ContractData$premiumPeriod, 1);
+            # At least 1 year premium period, at most contract duration!
+            self$Parameters$ContractData$premiumPeriod =
+                min(
+                    max(self$Parameters$ContractData$premiumPeriod, 1),
+                    self$Parameters$ContractData$policyPeriod
+                );
+
+            self$Parameters$Loadings$commissionPeriod = valueOrFunction(
+                self$Parameters$Loadings$commissionPeriod,
+                params = self$Parameters, values = self$Values);
+            self$Parameters$Loadings$commissionPeriod =
+                min(
+                    self$Parameters$Loadings$commissionPeriod,
+                    self$Parameters$ContractData$policyPeriod
+                )
+
 
             # Evaluate deferral period, i.e. if a function is used, calculate its numeric value from the other parameters
             self$Parameters$ContractData$deferralPeriod = valueOrFunction(
                 self$Parameters$ContractData$deferralPeriod,
                 params = self$Parameters, values = self$Values);
-
-            #### #
-            # COSTS PARAMETERS: can be a function => evaluate it to get the real costs
-            #### #
-            self$Parameters$Costs = private$evaluateCosts()
+            self$Parameters$ContractData$deferralPeriod =
+                min(
+                    self$Parameters$ContractData$deferralPeriod,
+                    self$Parameters$ContractData$policyPeriod
+                )
 
             #### #
             # AGES for multiple joint lives:
             #### #
             # For joint lives, some parameters can be given multiple times: age, sex
             # Collect all given values into one vector!
+
+            # TODO: First person has birthDate handled properly, handle all other persons, too!
             age = unlist(args[names(args) == "age"], use.names = FALSE)
-            if (!is.null(age)) {
-                self$Parameters$ContractData$age = age;
+            if (!is.null(age) && length(age) > 1) {
+                self$Parameters$ContractData$age = c(self$Parameters$ContractData$age[[1]], tail(age, -1));
+                # TODO: Calculate ages for all other persons, too. Or rather, allow multiple birthDate values, too
             }
             sex = unlist(args[names(args) == "sex"], use.names = FALSE)
-            if (!is.null(sex)) {
+            if (!is.null(sex) && length(sex) > 1) {
                 self$Parameters$ContractData$sex = sex;
             }
             if (is.null(self$Parameters$ContractData$ageDifferences)) {
@@ -949,6 +1047,13 @@ InsuranceContract = R6Class(
             self$Parameters$ActuarialBases$mortalityTable = valueOrFunction(
                 self$Parameters$ActuarialBases$mortalityTable,
                 params = self$Parameters, values = self$Values)
+
+            #### #
+            # COSTS PARAMETERS: can be a function => evaluate it to get the real costs
+            # This needs to be last, as the costs can depend on present values
+            # => mortality table is needed
+            #### #
+            self$Parameters$Costs = private$evaluateCosts()
 
             invisible(self)
         },

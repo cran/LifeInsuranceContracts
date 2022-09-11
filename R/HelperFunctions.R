@@ -2,11 +2,13 @@
 #' @importFrom objectProperties setSingleEnum
 #' @importFrom utils head tail
 #' @importFrom methods new
+#' @importFrom lubridate time_length interval
 NULL
 
 
 
 #' Enum to describe when a benefit or premium payment is due (in advance or in arrears)
+#'
 #' @details Currently, only two values are allowed;
 #' \itemize{
 #'     \item "in advance"
@@ -17,6 +19,7 @@ NULL
 PaymentTimeEnum = objectProperties::setSingleEnum("PaymentTime", levels = c("in advance", "in arrears"));
 
 #' Enum to describe possible sexes in an insurance contract or tariff.
+#'
 #' @details
 #' Currently, the only possible values are:
 #' * "unisex"
@@ -27,6 +30,7 @@ PaymentTimeEnum = objectProperties::setSingleEnum("PaymentTime", levels = c("in 
 SexEnum = objectProperties::setSingleEnum("Sex", levels = c("unisex", "male", "female"));
 
 #' Enum to define how much of a contract needs to be calculated automatically.
+#'
 #' @details
 #' When an [InsuranceContract] object is created, all time series are immediately
 #' calculated. However, sometimes, one only needs part of the values, so it
@@ -63,6 +67,7 @@ CalculationEnum = objectProperties::setSingleEnum("Calculation",
 
 
 #' Enum to define the different components of profit participation.
+#'
 #' @details
 #' Profit participation schemes typically consist of different components,
 #' which are calculated independently. Typical components are interest profit
@@ -174,16 +179,43 @@ deathBenefit.annuityDecreasing = function(interest) {
     protectionPeriod = params$ContractData$policyPeriod - params$ContractData$deferralPeriod;
     vk = 1/(1 + interest);
     if (interest == 0) {
-      sumInsured = (protectionPeriod:0) / protectionPeriod
+      benefit = (protectionPeriod:0) / protectionPeriod
     } else {
-      sumInsured = (vk ^ (protectionPeriod:0) - 1) / (vk ^ protectionPeriod - 1)
+      benefit = (vk ^ (protectionPeriod:0) - 1) / (vk ^ protectionPeriod - 1)
     }
-    pad0(sumInsured, l = len)
+    pad0(benefit, l = len)
   }
 }
 
-#' Defines a frequency charge (surcharge for monthly/quarterly/semiannual) premium payments #'
-#' Tariffs are typically calculated with yearly premium installments. When
+
+#' Calculate the age of the insured based on exact age at contract closing, rounded
+#' to the nearest birthday.
+#'
+#' @param params The parameters of the contract.
+#' @param values Unused by default (already calculated values of the contract)
+#'
+#' @export
+age.exactRounded = function(params, values) {
+  round(time_length(
+    interval(params$ContractData$birthDate, params$ContractData$contractClosing),
+  "years"))
+}
+
+#' Calculate the age of the insured based on the difference of the bith year and
+#' contract closing year.
+#'
+#' @param params The parameters of the contract.
+#' @param values Unused by default (already calculated values of the contract)
+#'
+#' @export
+age.yearDifference = function(params, values) {
+  year(params$ContractData$contractClosing) - year(params$ContractData$birthDate)
+}
+
+
+#' Defines a frequency charge (surcharge for monthly/quarterly/semiannual) premium payments
+#'
+#' @description Tariffs are typically calculated with yearly premium installments. When
 #' premiums are paid more often then one a year (in advance), the insurance
 #' receives part of the premium later (or not at all in case of death), so a
 #' surcharge for premium payment frequencies higher than yearly is applied to
@@ -432,6 +464,7 @@ pad0 = function(v, l, value = 0, start = 0) {
 }
 
 #' Set all entries of the given vector to 0 up until index 'start'
+#'
 #' @param v the vector to modify
 #' @param start how many leading elements to zero out
 #'
@@ -560,7 +593,9 @@ applyHook = function(hook, val, ...) {
 
 
 
-#' Overwrite all existing fields in the first argument with
+#' Overwrite all existing fields with default values given
+#'
+#' @description Overwrite all existing fields in the first argument with
 #' values given in valuelist. Members of valuelist that are not yet in
 #' fields are ignored. This allows a huge valuelist to be used to fill
 #' fields in multiple lists with given structure.
@@ -575,7 +610,10 @@ fillFields = function(fields, valuelist) {
   fields
 }
 
-#' Replace all missing values in fields (either missing or NA) with
+
+#' Replace missing values in ields by default fallback values
+#'
+#' @description Replace all missing values in fields (either missing or NA) with
 #' their corresponding values from fallback. Members in fallback that are missing
 #' in fields are inserted
 #' @param fields existing list
@@ -646,5 +684,7 @@ sumPaddedArrays = function(arr1 = NULL, arr2 = NULL, pad1 = 0, pad2 = 0) {
     arr1 + arr2
   }
 }
+
+
 
 
